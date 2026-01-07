@@ -2,8 +2,7 @@ package config
 
 import (
 	"fmt"
-
-	"rgb.game/ledger/pkg/utils"
+	"rgb-game/pkg/utils"
 )
 
 type DatabaseConfig struct {

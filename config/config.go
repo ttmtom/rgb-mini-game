@@ -1,9 +1,10 @@
 package config
 
 import (
+	"rgb-game/pkg/logger"
+	"rgb-game/pkg/utils"
+
 	"github.com/joho/godotenv"
-	"rgb.game/ledger/pkg/logger"
-	"rgb.game/ledger/pkg/utils"
 )
 
 type Config struct {

@@ -2,10 +2,10 @@ package postgres
 
 import (
 	"fmt"
+	"rgb-game/config"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"rgb.game/ledger/config"
 )
 
 type Postgres struct {
