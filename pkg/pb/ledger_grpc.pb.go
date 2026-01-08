@@ -4,7 +4,7 @@
 // - protoc             v3.20.3
 // source: api/proto/v1/ledger.proto
 
-package ledger
+package pb
 
 import (
 	context "context"
@@ -26,13 +26,8 @@ const (
 // LedgerServiceClient is the client API for LedgerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// The LedgerService defines the public API for the game state.
 type LedgerServiceClient interface {
-	// GetBalance returns the current R, G, B levels and the next expected Nonce.
 	GetBalance(ctx context.Context, in *GetBalanceRequest, opts ...grpc.CallOption) (*BalanceResponse, error)
-	// SubmitTransaction allows a player (or the Mission Service) to transfer attributes.
-	// The request contains a signed payload to prove authority.
 	SubmitTransaction(ctx context.Context, in *SubmitTransactionRequest, opts ...grpc.CallOption) (*SubmitTransactionResponse, error)
 }
 
@@ -67,13 +62,8 @@ func (c *ledgerServiceClient) SubmitTransaction(ctx context.Context, in *SubmitT
 // LedgerServiceServer is the server API for LedgerService service.
 // All implementations must embed UnimplementedLedgerServiceServer
 // for forward compatibility.
-//
-// The LedgerService defines the public API for the game state.
 type LedgerServiceServer interface {
-	// GetBalance returns the current R, G, B levels and the next expected Nonce.
 	GetBalance(context.Context, *GetBalanceRequest) (*BalanceResponse, error)
-	// SubmitTransaction allows a player (or the Mission Service) to transfer attributes.
-	// The request contains a signed payload to prove authority.
 	SubmitTransaction(context.Context, *SubmitTransactionRequest) (*SubmitTransactionResponse, error)
 	mustEmbedUnimplementedLedgerServiceServer()
 }

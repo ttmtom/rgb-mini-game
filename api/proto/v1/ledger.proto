@@ -2,15 +2,11 @@ syntax = "proto3";
 
 package rgb.ledger.v1;
 
-option go_package = "internal/core/ledger";
+option go_package = "pkg/pb";
 
-// The LedgerService defines the public API for the game state.
 service LedgerService {
-  // GetBalance returns the current R, G, B levels and the next expected Nonce.
   rpc GetBalance (GetBalanceRequest) returns (BalanceResponse) {}
 
-  // SubmitTransaction allows a player (or the Mission Service) to transfer attributes.
-  // The request contains a signed payload to prove authority.
   rpc SubmitTransaction (SubmitTransactionRequest) returns (SubmitTransactionResponse) {}
 }
 
@@ -19,64 +15,44 @@ service LedgerService {
 // =============================================================================
 
 message GetBalanceRequest {
-  // The Public Key address of the player to look up.
   string address = 1;
 }
 
 message BalanceResponse {
   string address = 1;
-  uint32 red = 2;   // Range: 0-255 (Use uint32 for proto compatibility)
-  uint32 green = 3; // Range: 0-255
-  uint32 blue = 4;  // Range: 0-255
+  uint32 red = 2;
+  uint32 green = 3;
+  uint32 blue = 4;
 
-  // Nonce is the counter for transactions.
-  // The client MUST use (nonce + 1) for their next transaction.
   uint64 nonce = 5;
 }
 
-// SubmitTransactionRequest is a "Signed Envelope".
-// The Ledger does not trust the sender until the signature is verified against the payload.
 message SubmitTransactionRequest {
-  // Step 1: The raw bytes containing the transfer details.
-  // In Go, this is the serialization of the `TransactionPayload` message below.
   bytes raw_payload = 1;
 
-  // Step 2: The cryptographic signature of `raw_payload`.
-  // Created using the sender's Private Key.
   bytes signature = 2;
 
-  // Step 3: The sender's Public Key (to verify the signature).
   string sender_pub_key = 3;
 }
 
-// TransactionPayload is the actual intent.
-// Note: This message is never sent directly as a top-level gRPC argument.
-// It is marshaled into bytes and put inside `SubmitTransactionRequest.raw_payload`.
 message TransactionPayload {
-  // Who is receiving the RGB?
   string to_address = 1;
 
-  // How much to transfer?
   uint32 amount_red = 2;
   uint32 amount_green = 3;
   uint32 amount_blue = 4;
 
-  // Replay Protection: Must match the Ledger's expected nonce for the Sender.
   uint64 nonce = 5;
 
-  // Timestamp helps prevent very old transactions from being replayed if nonce resets (optional)
   int64 timestamp = 6;
 }
 
 message SubmitTransactionResponse {
   bool success = 1;
 
-  // If success is false, this explains why (e.g., "Insufficient Red balance").
   string error_message = 2;
 
-  // Returns the unique Hash of this transaction (SHA256 of the payload).
   string tx_hash = 3;
 
-  // Returns the new balance immediately so the client doesn't need to query again.
   BalanceResponse new_balance = 4;
 }

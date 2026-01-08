@@ -4,7 +4,7 @@
 // 	protoc        v3.20.3
 // source: api/proto/v1/ledger.proto
 
-package ledger
+package pb
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -22,9 +22,8 @@ const (
 )
 
 type GetBalanceRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The Public Key address of the player to look up.
-	Address       string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -67,14 +66,12 @@ func (x *GetBalanceRequest) GetAddress() string {
 }
 
 type BalanceResponse struct {
-	state   protoimpl.MessageState `protogen:"open.v1"`
-	Address string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	Red     uint32                 `protobuf:"varint,2,opt,name=red,proto3" json:"red,omitempty"`     // Range: 0-255 (Use uint32 for proto compatibility)
-	Green   uint32                 `protobuf:"varint,3,opt,name=green,proto3" json:"green,omitempty"` // Range: 0-255
-	Blue    uint32                 `protobuf:"varint,4,opt,name=blue,proto3" json:"blue,omitempty"`   // Range: 0-255
-	// Nonce is the counter for transactions.
-	// The client MUST use (nonce + 1) for their next transaction.
-	Nonce         uint64 `protobuf:"varint,5,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	Red           uint32                 `protobuf:"varint,2,opt,name=red,proto3" json:"red,omitempty"`
+	Green         uint32                 `protobuf:"varint,3,opt,name=green,proto3" json:"green,omitempty"`
+	Blue          uint32                 `protobuf:"varint,4,opt,name=blue,proto3" json:"blue,omitempty"`
+	Nonce         uint64                 `protobuf:"varint,5,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -144,18 +141,11 @@ func (x *BalanceResponse) GetNonce() uint64 {
 	return 0
 }
 
-// SubmitTransactionRequest is a "Signed Envelope".
-// The Ledger does not trust the sender until the signature is verified against the payload.
 type SubmitTransactionRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Step 1: The raw bytes containing the transfer details.
-	// In Go, this is the serialization of the `TransactionPayload` message below.
-	RawPayload []byte `protobuf:"bytes,1,opt,name=raw_payload,json=rawPayload,proto3" json:"raw_payload,omitempty"`
-	// Step 2: The cryptographic signature of `raw_payload`.
-	// Created using the sender's Private Key.
-	Signature []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
-	// Step 3: The sender's Public Key (to verify the signature).
-	SenderPubKey  string `protobuf:"bytes,3,opt,name=sender_pub_key,json=senderPubKey,proto3" json:"sender_pub_key,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RawPayload    []byte                 `protobuf:"bytes,1,opt,name=raw_payload,json=rawPayload,proto3" json:"raw_payload,omitempty"`
+	Signature     []byte                 `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
+	SenderPubKey  string                 `protobuf:"bytes,3,opt,name=sender_pub_key,json=senderPubKey,proto3" json:"sender_pub_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -211,21 +201,14 @@ func (x *SubmitTransactionRequest) GetSenderPubKey() string {
 	return ""
 }
 
-// TransactionPayload is the actual intent.
-// Note: This message is never sent directly as a top-level gRPC argument.
-// It is marshaled into bytes and put inside `SubmitTransactionRequest.raw_payload`.
 type TransactionPayload struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Who is receiving the RGB?
-	ToAddress string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
-	// How much to transfer?
-	AmountRed   uint32 `protobuf:"varint,2,opt,name=amount_red,json=amountRed,proto3" json:"amount_red,omitempty"`
-	AmountGreen uint32 `protobuf:"varint,3,opt,name=amount_green,json=amountGreen,proto3" json:"amount_green,omitempty"`
-	AmountBlue  uint32 `protobuf:"varint,4,opt,name=amount_blue,json=amountBlue,proto3" json:"amount_blue,omitempty"`
-	// Replay Protection: Must match the Ledger's expected nonce for the Sender.
-	Nonce uint64 `protobuf:"varint,5,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	// Timestamp helps prevent very old transactions from being replayed if nonce resets (optional)
-	Timestamp     int64 `protobuf:"varint,6,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ToAddress     string                 `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
+	AmountRed     uint32                 `protobuf:"varint,2,opt,name=amount_red,json=amountRed,proto3" json:"amount_red,omitempty"`
+	AmountGreen   uint32                 `protobuf:"varint,3,opt,name=amount_green,json=amountGreen,proto3" json:"amount_green,omitempty"`
+	AmountBlue    uint32                 `protobuf:"varint,4,opt,name=amount_blue,json=amountBlue,proto3" json:"amount_blue,omitempty"`
+	Nonce         uint64                 `protobuf:"varint,5,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	Timestamp     int64                  `protobuf:"varint,6,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -303,14 +286,11 @@ func (x *TransactionPayload) GetTimestamp() int64 {
 }
 
 type SubmitTransactionResponse struct {
-	state   protoimpl.MessageState `protogen:"open.v1"`
-	Success bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	// If success is false, this explains why (e.g., "Insufficient Red balance").
-	ErrorMessage string `protobuf:"bytes,2,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
-	// Returns the unique Hash of this transaction (SHA256 of the payload).
-	TxHash string `protobuf:"bytes,3,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	// Returns the new balance immediately so the client doesn't need to query again.
-	NewBalance    *BalanceResponse `protobuf:"bytes,4,opt,name=new_balance,json=newBalance,proto3" json:"new_balance,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	ErrorMessage  string                 `protobuf:"bytes,2,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	TxHash        string                 `protobuf:"bytes,3,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	NewBalance    *BalanceResponse       `protobuf:"bytes,4,opt,name=new_balance,json=newBalance,proto3" json:"new_balance,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -410,7 +390,7 @@ const file_api_proto_v1_ledger_proto_rawDesc = "" +
 	"\rLedgerService\x12P\n" +
 	"\n" +
 	"GetBalance\x12 .rgb.ledger.v1.GetBalanceRequest\x1a\x1e.rgb.ledger.v1.BalanceResponse\"\x00\x12h\n" +
-	"\x11SubmitTransaction\x12'.rgb.ledger.v1.SubmitTransactionRequest\x1a(.rgb.ledger.v1.SubmitTransactionResponse\"\x00B\x16Z\x14internal/core/ledgerb\x06proto3"
+	"\x11SubmitTransaction\x12'.rgb.ledger.v1.SubmitTransactionRequest\x1a(.rgb.ledger.v1.SubmitTransactionResponse\"\x00B\bZ\x06pkg/pbb\x06proto3"
 
 var (
 	file_api_proto_v1_ledger_proto_rawDescOnce sync.Once
