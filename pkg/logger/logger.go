@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"runtime"
@@ -35,16 +36,32 @@ func Debug(msg string, args ...any) {
 	logger.Debug(msg, append(args, getCallerInfo())...)
 }
 
+func Debugf(format string, args ...any) {
+	logger.Debug(fmt.Sprintf(format, args...), getCallerInfo())
+}
+
 func Info(msg string, args ...any) {
 	logger.Info(msg, append(args, getCallerInfo())...)
+}
+
+func Infof(format string, args ...any) {
+	logger.Info(fmt.Sprintf(format, args...), getCallerInfo())
 }
 
 func Warn(msg string, args ...any) {
 	logger.Warn(msg, append(args, getCallerInfo())...)
 }
 
+func Warnf(format string, args ...any) {
+	logger.Warn(fmt.Sprintf(format, args...), getCallerInfo())
+}
+
 func Error(msg string, args ...any) {
 	logger.Error(msg, append(args, getCallerInfo())...)
+}
+
+func Errorf(format string, args ...any) {
+	logger.Error(fmt.Sprintf(format, args...), getCallerInfo())
 }
 
 func Fatalf(msg string, args ...any) {
