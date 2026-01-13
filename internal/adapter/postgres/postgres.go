@@ -2,7 +2,7 @@ package postgres
 
 import (
 	"fmt"
-	"rgb-game/config/ledger"
+	"rgb-game/config/ledger-config"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -12,7 +12,7 @@ type Postgres struct {
 	db *gorm.DB
 }
 
-func Init(config *ledger.DatabaseConfig) (*Postgres, error) {
+func Init(config *ledger_config.DatabaseConfig) (*Postgres, error) {
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
 		config.User,
 		config.Password,

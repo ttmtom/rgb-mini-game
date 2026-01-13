@@ -1,4 +1,4 @@
-package ledger
+package ledger_config
 
 import (
 	"rgb-game/pkg/logger"
@@ -9,16 +9,18 @@ import (
 
 type Config struct {
 	DatabaseConfig *DatabaseConfig
+	ServerConfig   *ServerConfig
 }
 
-func Init() (*Config, error) {
+func InitLedgerServerConfig() (*Config, error) {
 	if utils.GetEnv("APP_ENV", "dev") == "dev" {
 		if err := godotenv.Load(); err != nil {
-			logger.Fatalf("Error loading .env file", "err", err)
+			logger.Fatal("Error loading .env file", "err", err)
 		}
 	}
 
 	databaseConfig := InitDatabaseConfig()
+	serverConfig := InitServerConfig()
 
-	return &Config{databaseConfig}, nil
+	return &Config{databaseConfig, serverConfig}, nil
 }

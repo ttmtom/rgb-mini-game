@@ -13,7 +13,7 @@ type LedgerService struct {
 	pb.UnimplementedLedgerServiceServer
 }
 
-func NewLedgerService() *LedgerService {
+func newLedgerService() *LedgerService {
 	return &LedgerService{}
 }
 

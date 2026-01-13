@@ -1,4 +1,4 @@
-package ledger
+package ledger_config
 
 import (
 	"fmt"

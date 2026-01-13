@@ -64,7 +64,12 @@ func Errorf(format string, args ...any) {
 	logger.Error(fmt.Sprintf(format, args...), getCallerInfo())
 }
 
-func Fatalf(msg string, args ...any) {
+func Fatal(msg string, args ...any) {
 	logger.Error(msg, append(args, getCallerInfo())...)
+	os.Exit(1)
+}
+
+func Fatalf(format string, args ...any) {
+	logger.Error(fmt.Sprintf(format, args...), getCallerInfo())
 	os.Exit(1)
 }
