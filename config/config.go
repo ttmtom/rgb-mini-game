@@ -1,4 +1,4 @@
-package ledger_config
+package config
 
 import (
 	"rgb-game/pkg/logger"

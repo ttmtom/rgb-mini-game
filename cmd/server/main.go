@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
-	"rgb-game/config/ledger-config"
+	"rgb-game/config"
 	"rgb-game/internal/core/container"
 	"rgb-game/pkg/logger"
 
@@ -14,7 +14,7 @@ func main() {
 	logger.Init()
 
 	logger.Info("Init Ledger Server Config")
-	cfg, err := ledger_config.InitLedgerServerConfig()
+	cfg, err := config.InitLedgerServerConfig()
 	if err != nil {
 		logger.Fatalf("failed to initialize config: %v", err)
 	}

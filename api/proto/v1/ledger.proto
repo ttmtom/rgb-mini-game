@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package rgb.ledger.v1;
 
-option go_package = "pkg/pb";
+option go_package = "./pkg/pb";
 
 service LedgerService {
   rpc GetBalance (GetBalanceRequest) returns (BalanceResponse) {}
@@ -15,36 +15,51 @@ service LedgerService {
 // =============================================================================
 
 message GetBalanceRequest {
-  string address = 1;
+  string player_id = 1;
 }
 
 message BalanceResponse {
-  string address = 1;
+  string player_id = 1;
   uint32 red = 2;
   uint32 green = 3;
   uint32 blue = 4;
 
-  uint64 nonce = 5;
+  // The client needs this to sign the NEXT transaction correctly
+  uint64 next_nonce = 5;
 }
 
 message SubmitTransactionRequest {
+  // Step 1: Client Marshals 'TransactionPayload' into bytes.
+  // Step 2: Client Signs those bytes.
+  // Step 3: Client sends bytes + signature here.
   bytes raw_payload = 1;
 
+  // The cryptographic signature of raw_payload
   bytes signature = 2;
 
-  string sender_pub_key = 3;
+  // The Public Key used to verify the signature.
+  // The Server must check: Hash(sender_pub_key) == raw_payload.sender_id
+  bytes sender_pub_key = 3;
 }
 
 message TransactionPayload {
-  string to_address = 1;
+  // Enum to differentiate between a player transfer and a system reward
+  enum TxType {
+    TRANSFER = 0; // Standard peer-to-peer
+    MINT = 1;     // Mission Reward (Requires Authority Key)
+  }
+  TxType type = 1;
 
-  uint32 amount_red = 2;
-  uint32 amount_green = 3;
-  uint32 amount_blue = 4;
+  string sender_id = 2;
+  string receiver_id = 3;
 
-  uint64 nonce = 5;
+  uint32 amount_red = 4;
+  uint32 amount_green = 5;
+  uint32 amount_blue = 6;
 
-  int64 timestamp = 6;
+  uint64 nonce = 7;
+
+  int64 timestamp = 8;
 }
 
 message SubmitTransactionResponse {

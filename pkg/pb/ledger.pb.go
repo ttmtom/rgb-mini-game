@@ -21,9 +21,56 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Enum to differentiate between a player transfer and a system reward
+type TransactionPayload_TxType int32
+
+const (
+	TransactionPayload_TRANSFER TransactionPayload_TxType = 0 // Standard peer-to-peer
+	TransactionPayload_MINT     TransactionPayload_TxType = 1 // Mission Reward (Requires Authority Key)
+)
+
+// Enum value maps for TransactionPayload_TxType.
+var (
+	TransactionPayload_TxType_name = map[int32]string{
+		0: "TRANSFER",
+		1: "MINT",
+	}
+	TransactionPayload_TxType_value = map[string]int32{
+		"TRANSFER": 0,
+		"MINT":     1,
+	}
+)
+
+func (x TransactionPayload_TxType) Enum() *TransactionPayload_TxType {
+	p := new(TransactionPayload_TxType)
+	*p = x
+	return p
+}
+
+func (x TransactionPayload_TxType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TransactionPayload_TxType) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_proto_v1_ledger_proto_enumTypes[0].Descriptor()
+}
+
+func (TransactionPayload_TxType) Type() protoreflect.EnumType {
+	return &file_api_proto_v1_ledger_proto_enumTypes[0]
+}
+
+func (x TransactionPayload_TxType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TransactionPayload_TxType.Descriptor instead.
+func (TransactionPayload_TxType) EnumDescriptor() ([]byte, []int) {
+	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{3, 0}
+}
+
 type GetBalanceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	PlayerId      string                 `protobuf:"bytes,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -58,20 +105,21 @@ func (*GetBalanceRequest) Descriptor() ([]byte, []int) {
 	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *GetBalanceRequest) GetAddress() string {
+func (x *GetBalanceRequest) GetPlayerId() string {
 	if x != nil {
-		return x.Address
+		return x.PlayerId
 	}
 	return ""
 }
 
 type BalanceResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	Red           uint32                 `protobuf:"varint,2,opt,name=red,proto3" json:"red,omitempty"`
-	Green         uint32                 `protobuf:"varint,3,opt,name=green,proto3" json:"green,omitempty"`
-	Blue          uint32                 `protobuf:"varint,4,opt,name=blue,proto3" json:"blue,omitempty"`
-	Nonce         uint64                 `protobuf:"varint,5,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	PlayerId string                 `protobuf:"bytes,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	Red      uint32                 `protobuf:"varint,2,opt,name=red,proto3" json:"red,omitempty"`
+	Green    uint32                 `protobuf:"varint,3,opt,name=green,proto3" json:"green,omitempty"`
+	Blue     uint32                 `protobuf:"varint,4,opt,name=blue,proto3" json:"blue,omitempty"`
+	// The client needs this to sign the NEXT transaction correctly
+	NextNonce     uint64 `protobuf:"varint,5,opt,name=next_nonce,json=nextNonce,proto3" json:"next_nonce,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -106,9 +154,9 @@ func (*BalanceResponse) Descriptor() ([]byte, []int) {
 	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *BalanceResponse) GetAddress() string {
+func (x *BalanceResponse) GetPlayerId() string {
 	if x != nil {
-		return x.Address
+		return x.PlayerId
 	}
 	return ""
 }
@@ -134,18 +182,24 @@ func (x *BalanceResponse) GetBlue() uint32 {
 	return 0
 }
 
-func (x *BalanceResponse) GetNonce() uint64 {
+func (x *BalanceResponse) GetNextNonce() uint64 {
 	if x != nil {
-		return x.Nonce
+		return x.NextNonce
 	}
 	return 0
 }
 
 type SubmitTransactionRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RawPayload    []byte                 `protobuf:"bytes,1,opt,name=raw_payload,json=rawPayload,proto3" json:"raw_payload,omitempty"`
-	Signature     []byte                 `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
-	SenderPubKey  string                 `protobuf:"bytes,3,opt,name=sender_pub_key,json=senderPubKey,proto3" json:"sender_pub_key,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Step 1: Client Marshals 'TransactionPayload' into bytes.
+	// Step 2: Client Signs those bytes.
+	// Step 3: Client sends bytes + signature here.
+	RawPayload []byte `protobuf:"bytes,1,opt,name=raw_payload,json=rawPayload,proto3" json:"raw_payload,omitempty"`
+	// The cryptographic signature of raw_payload
+	Signature []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
+	// The Public Key used to verify the signature.
+	// The Server must check: Hash(sender_pub_key) == raw_payload.sender_id
+	SenderPubKey  []byte `protobuf:"bytes,3,opt,name=sender_pub_key,json=senderPubKey,proto3" json:"sender_pub_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -194,21 +248,23 @@ func (x *SubmitTransactionRequest) GetSignature() []byte {
 	return nil
 }
 
-func (x *SubmitTransactionRequest) GetSenderPubKey() string {
+func (x *SubmitTransactionRequest) GetSenderPubKey() []byte {
 	if x != nil {
 		return x.SenderPubKey
 	}
-	return ""
+	return nil
 }
 
 type TransactionPayload struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ToAddress     string                 `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
-	AmountRed     uint32                 `protobuf:"varint,2,opt,name=amount_red,json=amountRed,proto3" json:"amount_red,omitempty"`
-	AmountGreen   uint32                 `protobuf:"varint,3,opt,name=amount_green,json=amountGreen,proto3" json:"amount_green,omitempty"`
-	AmountBlue    uint32                 `protobuf:"varint,4,opt,name=amount_blue,json=amountBlue,proto3" json:"amount_blue,omitempty"`
-	Nonce         uint64                 `protobuf:"varint,5,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	Timestamp     int64                  `protobuf:"varint,6,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Type          TransactionPayload_TxType `protobuf:"varint,1,opt,name=type,proto3,enum=rgb.ledger.v1.TransactionPayload_TxType" json:"type,omitempty"`
+	SenderId      string                    `protobuf:"bytes,2,opt,name=sender_id,json=senderId,proto3" json:"sender_id,omitempty"`
+	ReceiverId    string                    `protobuf:"bytes,3,opt,name=receiver_id,json=receiverId,proto3" json:"receiver_id,omitempty"`
+	AmountRed     uint32                    `protobuf:"varint,4,opt,name=amount_red,json=amountRed,proto3" json:"amount_red,omitempty"`
+	AmountGreen   uint32                    `protobuf:"varint,5,opt,name=amount_green,json=amountGreen,proto3" json:"amount_green,omitempty"`
+	AmountBlue    uint32                    `protobuf:"varint,6,opt,name=amount_blue,json=amountBlue,proto3" json:"amount_blue,omitempty"`
+	Nonce         uint64                    `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	Timestamp     int64                     `protobuf:"varint,8,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -243,9 +299,23 @@ func (*TransactionPayload) Descriptor() ([]byte, []int) {
 	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *TransactionPayload) GetToAddress() string {
+func (x *TransactionPayload) GetType() TransactionPayload_TxType {
 	if x != nil {
-		return x.ToAddress
+		return x.Type
+	}
+	return TransactionPayload_TRANSFER
+}
+
+func (x *TransactionPayload) GetSenderId() string {
+	if x != nil {
+		return x.SenderId
+	}
+	return ""
+}
+
+func (x *TransactionPayload) GetReceiverId() string {
+	if x != nil {
+		return x.ReceiverId
 	}
 	return ""
 }
@@ -357,30 +427,36 @@ var File_api_proto_v1_ledger_proto protoreflect.FileDescriptor
 
 const file_api_proto_v1_ledger_proto_rawDesc = "" +
 	"\n" +
-	"\x19api/proto/v1/ledger.proto\x12\rrgb.ledger.v1\"-\n" +
-	"\x11GetBalanceRequest\x12\x18\n" +
-	"\aaddress\x18\x01 \x01(\tR\aaddress\"}\n" +
-	"\x0fBalanceResponse\x12\x18\n" +
-	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x10\n" +
+	"\x19api/proto/v1/ledger.proto\x12\rrgb.ledger.v1\"0\n" +
+	"\x11GetBalanceRequest\x12\x1b\n" +
+	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\"\x89\x01\n" +
+	"\x0fBalanceResponse\x12\x1b\n" +
+	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\x12\x10\n" +
 	"\x03red\x18\x02 \x01(\rR\x03red\x12\x14\n" +
 	"\x05green\x18\x03 \x01(\rR\x05green\x12\x12\n" +
-	"\x04blue\x18\x04 \x01(\rR\x04blue\x12\x14\n" +
-	"\x05nonce\x18\x05 \x01(\x04R\x05nonce\"\x7f\n" +
+	"\x04blue\x18\x04 \x01(\rR\x04blue\x12\x1d\n" +
+	"\n" +
+	"next_nonce\x18\x05 \x01(\x04R\tnextNonce\"\x7f\n" +
 	"\x18SubmitTransactionRequest\x12\x1f\n" +
 	"\vraw_payload\x18\x01 \x01(\fR\n" +
 	"rawPayload\x12\x1c\n" +
 	"\tsignature\x18\x02 \x01(\fR\tsignature\x12$\n" +
-	"\x0esender_pub_key\x18\x03 \x01(\tR\fsenderPubKey\"\xca\x01\n" +
-	"\x12TransactionPayload\x12\x1d\n" +
+	"\x0esender_pub_key\x18\x03 \x01(\fR\fsenderPubKey\"\xc9\x02\n" +
+	"\x12TransactionPayload\x12<\n" +
+	"\x04type\x18\x01 \x01(\x0e2(.rgb.ledger.v1.TransactionPayload.TxTypeR\x04type\x12\x1b\n" +
+	"\tsender_id\x18\x02 \x01(\tR\bsenderId\x12\x1f\n" +
+	"\vreceiver_id\x18\x03 \x01(\tR\n" +
+	"receiverId\x12\x1d\n" +
 	"\n" +
-	"to_address\x18\x01 \x01(\tR\ttoAddress\x12\x1d\n" +
-	"\n" +
-	"amount_red\x18\x02 \x01(\rR\tamountRed\x12!\n" +
-	"\famount_green\x18\x03 \x01(\rR\vamountGreen\x12\x1f\n" +
-	"\vamount_blue\x18\x04 \x01(\rR\n" +
+	"amount_red\x18\x04 \x01(\rR\tamountRed\x12!\n" +
+	"\famount_green\x18\x05 \x01(\rR\vamountGreen\x12\x1f\n" +
+	"\vamount_blue\x18\x06 \x01(\rR\n" +
 	"amountBlue\x12\x14\n" +
-	"\x05nonce\x18\x05 \x01(\x04R\x05nonce\x12\x1c\n" +
-	"\ttimestamp\x18\x06 \x01(\x03R\ttimestamp\"\xb4\x01\n" +
+	"\x05nonce\x18\a \x01(\x04R\x05nonce\x12\x1c\n" +
+	"\ttimestamp\x18\b \x01(\x03R\ttimestamp\" \n" +
+	"\x06TxType\x12\f\n" +
+	"\bTRANSFER\x10\x00\x12\b\n" +
+	"\x04MINT\x10\x01\"\xb4\x01\n" +
 	"\x19SubmitTransactionResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12#\n" +
 	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\x12\x17\n" +
@@ -390,7 +466,8 @@ const file_api_proto_v1_ledger_proto_rawDesc = "" +
 	"\rLedgerService\x12P\n" +
 	"\n" +
 	"GetBalance\x12 .rgb.ledger.v1.GetBalanceRequest\x1a\x1e.rgb.ledger.v1.BalanceResponse\"\x00\x12h\n" +
-	"\x11SubmitTransaction\x12'.rgb.ledger.v1.SubmitTransactionRequest\x1a(.rgb.ledger.v1.SubmitTransactionResponse\"\x00B\bZ\x06pkg/pbb\x06proto3"
+	"\x11SubmitTransaction\x12'.rgb.ledger.v1.SubmitTransactionRequest\x1a(.rgb.ledger.v1.SubmitTransactionResponse\"\x00B\n" +
+	"Z\b./pkg/pbb\x06proto3"
 
 var (
 	file_api_proto_v1_ledger_proto_rawDescOnce sync.Once
@@ -404,25 +481,28 @@ func file_api_proto_v1_ledger_proto_rawDescGZIP() []byte {
 	return file_api_proto_v1_ledger_proto_rawDescData
 }
 
+var file_api_proto_v1_ledger_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_api_proto_v1_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_api_proto_v1_ledger_proto_goTypes = []any{
-	(*GetBalanceRequest)(nil),         // 0: rgb.ledger.v1.GetBalanceRequest
-	(*BalanceResponse)(nil),           // 1: rgb.ledger.v1.BalanceResponse
-	(*SubmitTransactionRequest)(nil),  // 2: rgb.ledger.v1.SubmitTransactionRequest
-	(*TransactionPayload)(nil),        // 3: rgb.ledger.v1.TransactionPayload
-	(*SubmitTransactionResponse)(nil), // 4: rgb.ledger.v1.SubmitTransactionResponse
+	(TransactionPayload_TxType)(0),    // 0: rgb.ledger.v1.TransactionPayload.TxType
+	(*GetBalanceRequest)(nil),         // 1: rgb.ledger.v1.GetBalanceRequest
+	(*BalanceResponse)(nil),           // 2: rgb.ledger.v1.BalanceResponse
+	(*SubmitTransactionRequest)(nil),  // 3: rgb.ledger.v1.SubmitTransactionRequest
+	(*TransactionPayload)(nil),        // 4: rgb.ledger.v1.TransactionPayload
+	(*SubmitTransactionResponse)(nil), // 5: rgb.ledger.v1.SubmitTransactionResponse
 }
 var file_api_proto_v1_ledger_proto_depIdxs = []int32{
-	1, // 0: rgb.ledger.v1.SubmitTransactionResponse.new_balance:type_name -> rgb.ledger.v1.BalanceResponse
-	0, // 1: rgb.ledger.v1.LedgerService.GetBalance:input_type -> rgb.ledger.v1.GetBalanceRequest
-	2, // 2: rgb.ledger.v1.LedgerService.SubmitTransaction:input_type -> rgb.ledger.v1.SubmitTransactionRequest
-	1, // 3: rgb.ledger.v1.LedgerService.GetBalance:output_type -> rgb.ledger.v1.BalanceResponse
-	4, // 4: rgb.ledger.v1.LedgerService.SubmitTransaction:output_type -> rgb.ledger.v1.SubmitTransactionResponse
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // 0: rgb.ledger.v1.TransactionPayload.type:type_name -> rgb.ledger.v1.TransactionPayload.TxType
+	2, // 1: rgb.ledger.v1.SubmitTransactionResponse.new_balance:type_name -> rgb.ledger.v1.BalanceResponse
+	1, // 2: rgb.ledger.v1.LedgerService.GetBalance:input_type -> rgb.ledger.v1.GetBalanceRequest
+	3, // 3: rgb.ledger.v1.LedgerService.SubmitTransaction:input_type -> rgb.ledger.v1.SubmitTransactionRequest
+	2, // 4: rgb.ledger.v1.LedgerService.GetBalance:output_type -> rgb.ledger.v1.BalanceResponse
+	5, // 5: rgb.ledger.v1.LedgerService.SubmitTransaction:output_type -> rgb.ledger.v1.SubmitTransactionResponse
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_v1_ledger_proto_init() }
@@ -435,13 +515,14 @@ func file_api_proto_v1_ledger_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_v1_ledger_proto_rawDesc), len(file_api_proto_v1_ledger_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_api_proto_v1_ledger_proto_goTypes,
 		DependencyIndexes: file_api_proto_v1_ledger_proto_depIdxs,
+		EnumInfos:         file_api_proto_v1_ledger_proto_enumTypes,
 		MessageInfos:      file_api_proto_v1_ledger_proto_msgTypes,
 	}.Build()
 	File_api_proto_v1_ledger_proto = out.File

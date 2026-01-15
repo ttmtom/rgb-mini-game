@@ -18,15 +18,15 @@ func newLedgerService() *LedgerService {
 }
 
 func (s *LedgerService) GetBalance(ctx context.Context, req *pb.GetBalanceRequest) (*pb.BalanceResponse, error) {
-	logger.Infof("GetBalance for address %s", req.Address)
+	logger.Infof("GetBalance for address %s", req.GetPlayerId())
 
 	// TODO: Implement actual logic to get balance from the ledger
 	return &pb.BalanceResponse{
-		Address: req.Address,
-		Red:     0,
-		Green:   0,
-		Blue:    0,
-		Nonce:   0,
+		PlayerId:  req.PlayerId,
+		Red:       0,
+		Green:     0,
+		Blue:      0,
+		NextNonce: 0,
 	}, nil
 }
 
@@ -48,7 +48,7 @@ func (s *LedgerService) SubmitTransaction(ctx context.Context, req *pb.SubmitTra
 		}, nil
 	}
 
-	logger.Infof("Transaction details: to=%s, r=%d, g=%d, b=%d", payload.ToAddress, payload.AmountRed, payload.AmountGreen, payload.AmountBlue)
+	logger.Infof("Transaction details: from=%s,to=%s, r=%d, g=%d, b=%d", payload.GetSenderId(), payload.GetReceiverId(), payload.AmountRed, payload.AmountGreen, payload.AmountBlue)
 
 	txHash := uuid.New().String()
 
