@@ -30,6 +30,7 @@ func main() {
 	}
 
 	logger.Infof("gRPC server listening on %v", lis.Addr())
+	logger.Info("")
 
 	if err := grpcServer.Serve(lis); err != nil {
 		logger.Fatalf("failed to serve: %v", err)
