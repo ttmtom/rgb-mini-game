@@ -2,19 +2,40 @@ package ledger
 
 import (
 	"context"
+	"crypto/ed25519"
+	"rgb-game/internal/adapter/postgres/repositories"
+	"rgb-game/internal/core/interfaces"
 	"rgb-game/pkg/logger"
 	"rgb-game/pkg/pb"
 
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
+	"gorm.io/gorm"
 )
 
 type LedgerService struct {
 	pb.UnimplementedLedgerServiceServer
+	db              *gorm.DB
+	playerRepo      *repositories.PlayerRepository
+	transactionRepo *repositories.TransactionRepository
+	gameEngine      interfaces.GameEngine
+	authorityPubKey ed25519.PublicKey
 }
 
-func newLedgerService() *LedgerService {
-	return &LedgerService{}
+func newLedgerService(
+	db *gorm.DB,
+	playerRepo *repositories.PlayerRepository,
+	transactionRepo *repositories.TransactionRepository,
+	gameEngine interfaces.GameEngine,
+	authorityPubKey ed25519.PublicKey,
+) *LedgerService {
+	return &LedgerService{
+		db:              db,
+		playerRepo:      playerRepo,
+		transactionRepo: transactionRepo,
+		gameEngine:      gameEngine,
+		authorityPubKey: authorityPubKey,
+	}
 }
 
 func (s *LedgerService) GetBalance(ctx context.Context, req *pb.GetBalanceRequest) (*pb.BalanceResponse, error) {

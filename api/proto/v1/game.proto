@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package rgb.ledger.v1;
+
+option go_package = "./pkg/pb";
+
+import "api/proto/v1/ledger.proto";
+
+service GameService {
+  // Request a new mission for a player. Returns the reward color and cooldown.
+  rpc RequestMission (RequestMissionRequest) returns (MissionResponse) {}
+
+  // Complete a previously requested mission after cooldown has elapsed.
+  rpc CompleteMission (CompleteMissionRequest) returns (CompleteMissionResponse) {}
+}
+
+// =============================================================================
+// Enums
+// =============================================================================
+
+enum RewardColor {
+  RED = 0;
+  GREEN = 1;
+  BLUE = 2;
+}
+
+// =============================================================================
+// Message Definitions
+// =============================================================================
+
+message RequestMissionRequest {
+  string player_id = 1;
+}
+
+message MissionResponse {
+  string mission_id = 1;
+  RewardColor reward_color = 2;
+  int32 cooldown_seconds = 3;
+}
+
+message CompleteMissionRequest {
+  string mission_id = 1;
+  string player_id = 2;
+}
+
+message CompleteMissionResponse {
+  bool success = 1;
+  string error_message = 2;
+  string tx_hash = 3;
+  BalanceResponse new_balance = 4;
+}
+

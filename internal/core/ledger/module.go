@@ -1,12 +1,26 @@
 package ledger
 
+import (
+	"crypto/ed25519"
+	"rgb-game/internal/adapter/postgres/repositories"
+	"rgb-game/internal/core/interfaces"
+
+	"gorm.io/gorm"
+)
+
 type LedgerModule struct {
 	service *LedgerService
 }
 
-func NewLedgerModule() *LedgerModule {
+func NewLedgerModule(
+	db *gorm.DB,
+	playerRepo *repositories.PlayerRepository,
+	transactionRepo *repositories.TransactionRepository,
+	gameEngine interfaces.GameEngine,
+	authorityPubKey ed25519.PublicKey,
+) *LedgerModule {
 	return &LedgerModule{
-		service: newLedgerService(),
+		service: newLedgerService(db, playerRepo, transactionRepo, gameEngine, authorityPubKey),
 	}
 }
 
