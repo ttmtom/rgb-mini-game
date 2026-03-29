@@ -37,3 +37,17 @@ func InitLedgerConfig() (*LedgerConfig, error) {
 		AuthorityConfig: InitAuthorityConfig(),
 	}, nil
 }
+
+// GameServerFullConfig holds all configuration for the Game Server binary.
+type GameServerFullConfig struct {
+	GameServerConfig *GameServerConfig
+}
+
+// InitGameServerFullConfig builds the full configuration for the Game Server binary.
+func InitGameServerFullConfig() (*GameServerFullConfig, error) {
+	loadEnv()
+
+	return &GameServerFullConfig{
+		GameServerConfig: InitGameServerConfig(),
+	}, nil
+}

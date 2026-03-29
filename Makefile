@@ -9,3 +9,9 @@ migrate:
 
 build-ledger:
 	go build -o bin/ledger cmd/ledger/main.go
+
+build-server:
+	go build -o bin/server cmd/server/main.go
+
+build-all: build-ledger build-server
+
