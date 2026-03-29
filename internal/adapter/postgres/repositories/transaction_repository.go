@@ -1,8 +1,13 @@
 package repositories
 
-import "gorm.io/gorm"
+import (
+	"rgb-game/internal/core/types"
 
-// TransactionModel represents a persisted ledger transaction.
+	"gorm.io/gorm"
+)
+
+// TransactionModel is the GORM persistence model for a ledger transaction.
+// It is intentionally kept internal to the adapter; callers work with types.TransactionRecord.
 type TransactionModel struct {
 	Hash       string `gorm:"primaryKey;type:varchar(64)"`
 	Type       uint8  `gorm:"not null"` // 0=TRANSFER, 1=MINT
@@ -19,7 +24,21 @@ func (TransactionModel) TableName() string {
 	return "transactions"
 }
 
-// TransactionRepository provides persistence operations for TransactionModel.
+func fromTransactionRecord(r *types.TransactionRecord) *TransactionModel {
+	return &TransactionModel{
+		Hash:       r.Hash,
+		Type:       r.Type,
+		SenderID:   r.SenderID,
+		ReceiverID: r.ReceiverID,
+		Red:        r.Red,
+		Green:      r.Green,
+		Blue:       r.Blue,
+		Nonce:      r.Nonce,
+		Timestamp:  r.Timestamp,
+	}
+}
+
+// TransactionRepository provides persistence operations for transaction records.
 type TransactionRepository struct {
 	db *gorm.DB
 }
@@ -30,6 +49,6 @@ func NewTransactionRepository(db *gorm.DB) *TransactionRepository {
 }
 
 // Create persists a new transaction record.
-func (r *TransactionRepository) Create(tx *gorm.DB, model *TransactionModel) error {
-	return tx.Create(model).Error
+func (r *TransactionRepository) Create(tx *gorm.DB, record *types.TransactionRecord) error {
+	return tx.Create(fromTransactionRecord(record)).Error
 }

@@ -2,6 +2,7 @@ package container
 
 import (
 	"crypto/ed25519"
+	"rgb-game/internal/adapter/postgres/repositories"
 	"rgb-game/internal/core/interfaces"
 	"rgb-game/internal/core/ledger"
 	"rgb-game/pkg/pb"
@@ -19,7 +20,11 @@ func NewLedgerContainer(
 	gameEngine interfaces.GameEngine,
 	authorityPubKey ed25519.PublicKey,
 ) *LedgerContainer {
-	ledgerModule := ledger.NewLedgerModule(db, gameEngine, authorityPubKey)
+	// ── Repositories (adapter layer — wired here, never inside core) ────
+	playerRepo := repositories.NewPlayerRepository(db)
+	txRepo := repositories.NewTransactionRepository(db)
+
+	ledgerModule := ledger.NewLedgerModule(db, playerRepo, txRepo, gameEngine, authorityPubKey)
 
 	return &LedgerContainer{ledgerModule}
 }
