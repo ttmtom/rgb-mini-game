@@ -16,7 +16,7 @@ type Config struct {
 type LedgerConfig struct {
 	DatabaseConfig  *DatabaseConfig
 	ServerConfig    *ServerConfig
-	AuthorityPubKey string // hex-encoded ed25519 public key of the minting authority
+	AuthorityConfig *AuthorityConfig
 }
 
 func loadEnv() {
@@ -27,18 +27,13 @@ func loadEnv() {
 	}
 }
 
-// InitLedgerConfig builds the full configuration for the Ledger binary,
-// including the authority public key used to validate MINT transactions.
+// InitLedgerConfig builds the full configuration for the Ledger binary.
 func InitLedgerConfig() (*LedgerConfig, error) {
 	loadEnv()
 
-	databaseConfig := InitDatabaseConfig()
-	serverConfig := InitServerConfig()
-	authorityPubKey := utils.GetEnv("AUTHORITY_PUB_KEY")
-
 	return &LedgerConfig{
-		DatabaseConfig:  databaseConfig,
-		ServerConfig:    serverConfig,
-		AuthorityPubKey: authorityPubKey,
+		DatabaseConfig:  InitDatabaseConfig(),
+		ServerConfig:    InitServerConfig(),
+		AuthorityConfig: InitAuthorityConfig(),
 	}, nil
 }

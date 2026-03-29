@@ -1,6 +1,9 @@
 proto-v1:
 	protoc --go_out=. --go-grpc_out=. api/proto/v1/*.proto
 
+keygen:
+	go run cmd/keygen/main.go
+
 migrate:
 	go run cmd/migrate/main.go
 

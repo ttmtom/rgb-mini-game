@@ -17,7 +17,7 @@ type LedgerService struct {
 	pb.UnimplementedLedgerServiceServer
 	db              *gorm.DB
 	playerRepo      *repositories.PlayerRepository
-	transactionRepo *repositories.TransactionRepository
+	txRepo          *repositories.TransactionRepository
 	gameEngine      interfaces.GameEngine
 	authorityPubKey ed25519.PublicKey
 }
@@ -25,14 +25,14 @@ type LedgerService struct {
 func newLedgerService(
 	db *gorm.DB,
 	playerRepo *repositories.PlayerRepository,
-	transactionRepo *repositories.TransactionRepository,
+	txRepo *repositories.TransactionRepository,
 	gameEngine interfaces.GameEngine,
 	authorityPubKey ed25519.PublicKey,
 ) *LedgerService {
 	return &LedgerService{
 		db:              db,
 		playerRepo:      playerRepo,
-		transactionRepo: transactionRepo,
+		txRepo:          txRepo,
 		gameEngine:      gameEngine,
 		authorityPubKey: authorityPubKey,
 	}

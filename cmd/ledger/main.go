@@ -1,10 +1,10 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
 	"net"
 	"rgb-game/config"
+	"rgb-game/internal/adapter/authority"
 	"rgb-game/internal/adapter/postgres"
 	"rgb-game/internal/adapter/postgres/repositories"
 	"rgb-game/internal/core/container"
@@ -25,12 +25,9 @@ func main() {
 	}
 
 	// ── Authority public key ────────────────────────────────────────────
-	if cfg.AuthorityPubKey == "" {
-		logger.Fatalf("AUTHORITY_PUB_KEY env var is required")
-	}
-	authorityPubKey, err := hex.DecodeString(cfg.AuthorityPubKey)
+	authorityPubKey, err := authority.Load(cfg.AuthorityConfig)
 	if err != nil {
-		logger.Fatalf("invalid AUTHORITY_PUB_KEY (must be hex-encoded ed25519 public key): %v", err)
+		logger.Fatalf("failed to load authority public key: %v", err)
 	}
 	logger.Infof("Authority public key loaded (%d bytes)", len(authorityPubKey))
 
@@ -44,7 +41,7 @@ func main() {
 
 	// ── Repositories ────────────────────────────────────────────────────
 	playerRepo := repositories.NewPlayerRepository(db)
-	transactionRepo := repositories.NewTransactionRepository(db)
+	txRepo := repositories.NewTransactionRepository(db)
 
 	// ── Game Engine ─────────────────────────────────────────────────────
 	ge := game_engine.NewGameEngine()
@@ -52,7 +49,7 @@ func main() {
 	// ── DI Container & gRPC ─────────────────────────────────────────────
 	grpcServer := grpc.NewServer()
 
-	ledgerContainer := container.NewLedgerContainer(db, playerRepo, transactionRepo, ge, authorityPubKey)
+	ledgerContainer := container.NewLedgerContainer(db, playerRepo, txRepo, ge, authorityPubKey)
 	ledgerContainer.ServerRegister(grpcServer)
 
 	// ── Listen ──────────────────────────────────────────────────────────

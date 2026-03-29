@@ -15,12 +15,12 @@ type LedgerModule struct {
 func NewLedgerModule(
 	db *gorm.DB,
 	playerRepo *repositories.PlayerRepository,
-	transactionRepo *repositories.TransactionRepository,
+	txRepo *repositories.TransactionRepository,
 	gameEngine interfaces.GameEngine,
 	authorityPubKey ed25519.PublicKey,
 ) *LedgerModule {
 	return &LedgerModule{
-		service: newLedgerService(db, playerRepo, transactionRepo, gameEngine, authorityPubKey),
+		service: newLedgerService(db, playerRepo, txRepo, gameEngine, authorityPubKey),
 	}
 }
 

@@ -25,6 +25,12 @@ go.work.sum
 # env file
 *.env
 
+# Key files
+.key/
+
+# database data
+.data
+
 # IDE files
 *.iml
 .idea/**

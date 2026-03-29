@@ -18,11 +18,11 @@ type LedgerContainer struct {
 func NewLedgerContainer(
 	db *gorm.DB,
 	playerRepo *repositories.PlayerRepository,
-	transactionRepo *repositories.TransactionRepository,
+	txRepo *repositories.TransactionRepository,
 	gameEngine interfaces.GameEngine,
 	authorityPubKey ed25519.PublicKey,
 ) *LedgerContainer {
-	ledgerModule := ledger.NewLedgerModule(db, playerRepo, transactionRepo, gameEngine, authorityPubKey)
+	ledgerModule := ledger.NewLedgerModule(db, playerRepo, txRepo, gameEngine, authorityPubKey)
 
 	return &LedgerContainer{ledgerModule}
 }
