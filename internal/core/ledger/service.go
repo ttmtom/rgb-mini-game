@@ -20,11 +20,11 @@ import (
 
 type LedgerService struct {
 	pb.UnimplementedLedgerServiceServer
-	db              *gorm.DB
-	playerRepo      interfaces.PlayerRepository
-	txRepo          interfaces.TransactionRepository
-	gameEngine      interfaces.GameEngine
-	authorityPubKey ed25519.PublicKey
+	db         *gorm.DB
+	playerRepo interfaces.PlayerRepository
+	txRepo     interfaces.TransactionRepository
+	gameEngine interfaces.GameEngine
+	auth       interfaces.PublicAuthority
 }
 
 func newLedgerService(
@@ -32,14 +32,14 @@ func newLedgerService(
 	playerRepo interfaces.PlayerRepository,
 	txRepo interfaces.TransactionRepository,
 	gameEngine interfaces.GameEngine,
-	authorityPubKey ed25519.PublicKey,
+	auth interfaces.PublicAuthority,
 ) *LedgerService {
 	return &LedgerService{
-		db:              db,
-		playerRepo:      playerRepo,
-		txRepo:          txRepo,
-		gameEngine:      gameEngine,
-		authorityPubKey: authorityPubKey,
+		db:         db,
+		playerRepo: playerRepo,
+		txRepo:     txRepo,
+		gameEngine: gameEngine,
+		auth:       auth,
 	}
 }
 
@@ -97,7 +97,7 @@ func (s *LedgerService) SubmitTransaction(ctx context.Context, req *pb.SubmitTra
 
 	// 4. For MINT: only the authority key is allowed
 	isMint := payload.GetType() == pb.TransactionPayload_MINT
-	if isMint && !bytes.Equal(pubKey, s.authorityPubKey) {
+	if isMint && !bytes.Equal(pubKey, s.auth.PubKey()) {
 		logger.Warnf("Unauthorized MINT attempt from %s", payload.GetSenderId())
 		return &pb.SubmitTransactionResponse{Success: false, ErrorMessage: "only authority can mint"}, nil
 	}

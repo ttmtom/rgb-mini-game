@@ -24,11 +24,11 @@ func main() {
 	}
 
 	// ── Authority public key ────────────────────────────────────────────
-	authorityPubKey, err := authority.Load(cfg.AuthorityConfig)
+	auth, err := authority.Load(cfg.AuthorityConfig)
 	if err != nil {
-		logger.Fatalf("failed to load authority public key: %v", err)
+		logger.Fatalf("failed to load authority: %v", err)
 	}
-	logger.Infof("Authority public key loaded (%d bytes)", len(authorityPubKey))
+	logger.Infof("Authority loaded: player ID %s", auth.PlayerID())
 
 	// ── Postgres ────────────────────────────────────────────────────────
 	logger.Info("Connecting to Postgres")
@@ -44,7 +44,7 @@ func main() {
 	// ── DI Container & gRPC ─────────────────────────────────────────────
 	grpcServer := grpc.NewServer()
 
-	ledgerContainer := container.NewLedgerContainer(db, ge, authorityPubKey)
+	ledgerContainer := container.NewLedgerContainer(db, ge, auth)
 	ledgerContainer.ServerRegister(grpcServer)
 
 	// ── Listen ──────────────────────────────────────────────────────────

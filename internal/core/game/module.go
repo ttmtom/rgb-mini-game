@@ -1,9 +1,9 @@
 package game
 
 import (
-	"crypto/ed25519"
 	"time"
 
+	"rgb-game/internal/core/interfaces"
 	"rgb-game/pkg/pb"
 )
 
@@ -13,14 +13,12 @@ type GameModule struct {
 }
 
 func NewGameModule(
-	authorityID string,
-	authorityPubKey ed25519.PublicKey,
-	authorityPrivKey ed25519.PrivateKey,
+	auth interfaces.FullAuthority,
 	ledgerClient pb.LedgerServiceClient,
 	cooldown time.Duration,
 ) *GameModule {
 	return &GameModule{
-		service: newGameService(authorityID, authorityPubKey, authorityPrivKey, ledgerClient, cooldown),
+		service: newGameService(auth, ledgerClient, cooldown),
 	}
 }
 

@@ -1,10 +1,10 @@
 package container
 
 import (
-	"crypto/ed25519"
 	"time"
 
 	"rgb-game/internal/core/game"
+	"rgb-game/internal/core/interfaces"
 	"rgb-game/pkg/pb"
 
 	"google.golang.org/grpc"
@@ -16,14 +16,12 @@ type GameContainer struct {
 }
 
 func NewGameContainer(
-	authorityID string,
-	authorityPubKey ed25519.PublicKey,
-	authorityPrivKey ed25519.PrivateKey,
+	auth interfaces.FullAuthority,
 	ledgerClient pb.LedgerServiceClient,
 	cooldown time.Duration,
 ) *GameContainer {
 	return &GameContainer{
-		gameModule: game.NewGameModule(authorityID, authorityPubKey, authorityPrivKey, ledgerClient, cooldown),
+		gameModule: game.NewGameModule(auth, ledgerClient, cooldown),
 	}
 }
 

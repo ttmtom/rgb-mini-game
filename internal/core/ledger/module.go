@@ -1,7 +1,6 @@
 package ledger
 
 import (
-	"crypto/ed25519"
 	"rgb-game/internal/core/interfaces"
 
 	"gorm.io/gorm"
@@ -16,11 +15,11 @@ func NewLedgerModule(
 	playerRepo interfaces.PlayerRepository,
 	txRepo interfaces.TransactionRepository,
 	gameEngine interfaces.GameEngine,
-	authorityPubKey ed25519.PublicKey,
+	auth interfaces.PublicAuthority,
 ) *LedgerModule {
 
 	return &LedgerModule{
-		service: newLedgerService(db, playerRepo, txRepo, gameEngine, authorityPubKey),
+		service: newLedgerService(db, playerRepo, txRepo, gameEngine, auth),
 	}
 }
 

@@ -2,14 +2,13 @@ package game
 
 import (
 	"context"
-	"crypto/ed25519"
 	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"sync"
 	"time"
 
-	"rgb-game/pkg/crypto"
+	"rgb-game/internal/core/interfaces"
 	"rgb-game/pkg/logger"
 	"rgb-game/pkg/pb"
 
@@ -33,17 +32,13 @@ type GameService struct {
 	playerActiveMission map[string]string         // playerID → active missionID
 	playerLastComplete  map[string]time.Time      // playerID → last completion time
 
-	authorityID      string
-	authorityPubKey  ed25519.PublicKey
-	authorityPrivKey ed25519.PrivateKey
-	ledgerClient     pb.LedgerServiceClient
-	cooldown         time.Duration
+	auth         interfaces.FullAuthority
+	ledgerClient pb.LedgerServiceClient
+	cooldown     time.Duration
 }
 
 func newGameService(
-	authorityID string,
-	authorityPubKey ed25519.PublicKey,
-	authorityPrivKey ed25519.PrivateKey,
+	auth interfaces.FullAuthority,
 	ledgerClient pb.LedgerServiceClient,
 	cooldown time.Duration,
 ) *GameService {
@@ -51,9 +46,7 @@ func newGameService(
 		missions:            make(map[string]*missionRecord),
 		playerActiveMission: make(map[string]string),
 		playerLastComplete:  make(map[string]time.Time),
-		authorityID:         authorityID,
-		authorityPubKey:     authorityPubKey,
-		authorityPrivKey:    authorityPrivKey,
+		auth:                auth,
 		ledgerClient:        ledgerClient,
 		cooldown:            cooldown,
 	}
@@ -135,7 +128,7 @@ func (s *GameService) CompleteMission(ctx context.Context, req *pb.CompleteMissi
 	s.mu.Unlock()
 
 	// Fetch authority's current nonce from the Ledger.
-	balResp, err := s.ledgerClient.GetBalance(ctx, &pb.GetBalanceRequest{PlayerId: s.authorityID})
+	balResp, err := s.ledgerClient.GetBalance(ctx, &pb.GetBalanceRequest{PlayerId: s.auth.PlayerID()})
 	if err != nil {
 		return &pb.CompleteMissionResponse{Success: false, ErrorMessage: fmt.Sprintf("failed to get authority nonce: %v", err)}, nil
 	}
@@ -153,7 +146,7 @@ func (s *GameService) CompleteMission(ctx context.Context, req *pb.CompleteMissi
 
 	payload := &pb.TransactionPayload{
 		Type:        pb.TransactionPayload_MINT,
-		SenderId:    s.authorityID,
+		SenderId:    s.auth.PlayerID(),
 		ReceiverId:  playerID,
 		AmountRed:   amtRed,
 		AmountGreen: amtGreen,
@@ -167,13 +160,13 @@ func (s *GameService) CompleteMission(ctx context.Context, req *pb.CompleteMissi
 		return &pb.CompleteMissionResponse{Success: false, ErrorMessage: fmt.Sprintf("failed to marshal payload: %v", err)}, nil
 	}
 
-	signature := crypto.Sign(s.authorityPrivKey, rawPayload)
+	signature := s.auth.Sign(rawPayload)
 
 	// Submit the MINT transaction to the Ledger.
 	txResp, err := s.ledgerClient.SubmitTransaction(ctx, &pb.SubmitTransactionRequest{
 		RawPayload:   rawPayload,
 		Signature:    signature,
-		SenderPubKey: s.authorityPubKey,
+		SenderPubKey: s.auth.PubKey(),
 	})
 	if err != nil {
 		return &pb.CompleteMissionResponse{Success: false, ErrorMessage: fmt.Sprintf("ledger submit failed: %v", err)}, nil
@@ -197,7 +190,7 @@ func (s *GameService) CompleteMission(ctx context.Context, req *pb.CompleteMissi
 	}, nil
 }
 
-// AuthorityInfo logs authority identity details (for operator setup).
+// AuthorityInfo returns the authority player ID and hex-encoded public key (for operator setup).
 func (s *GameService) AuthorityInfo() (id string, pubKeyHex string) {
-	return s.authorityID, hex.EncodeToString(s.authorityPubKey)
+	return s.auth.PlayerID(), hex.EncodeToString(s.auth.PubKey())
 }

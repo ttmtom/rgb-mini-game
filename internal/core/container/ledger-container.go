@@ -1,7 +1,6 @@
 package container
 
 import (
-	"crypto/ed25519"
 	"rgb-game/internal/adapter/postgres/repositories"
 	"rgb-game/internal/core/interfaces"
 	"rgb-game/internal/core/ledger"
@@ -18,13 +17,13 @@ type LedgerContainer struct {
 func NewLedgerContainer(
 	db *gorm.DB,
 	gameEngine interfaces.GameEngine,
-	authorityPubKey ed25519.PublicKey,
+	auth interfaces.PublicAuthority,
 ) *LedgerContainer {
 	// ── Repositories (adapter layer — wired here, never inside core) ────
 	playerRepo := repositories.NewPlayerRepository(db)
 	txRepo := repositories.NewTransactionRepository(db)
 
-	ledgerModule := ledger.NewLedgerModule(db, playerRepo, txRepo, gameEngine, authorityPubKey)
+	ledgerModule := ledger.NewLedgerModule(db, playerRepo, txRepo, gameEngine, auth)
 
 	return &LedgerContainer{ledgerModule}
 }

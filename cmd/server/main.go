@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"rgb-game/config"
+	"rgb-game/internal/adapter/authority"
 	"rgb-game/internal/core/container"
 	"rgb-game/pkg/crypto"
 	"rgb-game/pkg/logger"
@@ -31,10 +32,10 @@ func main() {
 	if err != nil {
 		logger.Fatalf("failed to load/generate authority keypair: %v", err)
 	}
-	authorityID := crypto.PubKeyToPlayerID(keypair.PublicKey)
-	logger.Infof("Authority Player ID: %s", authorityID)
-	logger.Infof("Authority Public Key (hex): %x", keypair.PublicKey)
-	logger.Infof("Set AUTHORITY_PUB_KEY=%x in the Ledger .env if not using a shared key file", keypair.PublicKey)
+	auth := authority.NewFullAuthority(keypair)
+	logger.Infof("Authority Player ID: %s", auth.PlayerID())
+	logger.Infof("Authority Public Key (hex): %x", auth.PubKey())
+	logger.Infof("Set AUTHORITY_PUB_KEY=%x in the Ledger .env if not using a shared key file", auth.PubKey())
 
 	// ── Ledger gRPC client ──────────────────────────────────────────────
 	logger.Infof("Connecting to Ledger at %s", gsCfg.LedgerAddr)
@@ -49,13 +50,7 @@ func main() {
 	cooldown := time.Duration(gsCfg.MissionCooldownSeconds) * time.Second
 	grpcServer := grpc.NewServer()
 
-	gameContainer := container.NewGameContainer(
-		authorityID,
-		keypair.PublicKey,
-		keypair.PrivateKey,
-		ledgerClient,
-		cooldown,
-	)
+	gameContainer := container.NewGameContainer(auth, ledgerClient, cooldown)
 	gameContainer.ServerRegister(grpcServer)
 
 	// ── Listen ──────────────────────────────────────────────────────────
