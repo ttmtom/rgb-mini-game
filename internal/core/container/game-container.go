@@ -1,8 +1,7 @@
 package container
 
 import (
-	"time"
-
+	"rgb-game/config"
 	"rgb-game/internal/core/game"
 	"rgb-game/internal/core/interfaces"
 	"rgb-game/pkg/pb"
@@ -18,10 +17,10 @@ type GameContainer struct {
 func NewGameContainer(
 	auth interfaces.FullAuthority,
 	ledgerClient pb.LedgerServiceClient,
-	cooldown time.Duration,
+	gameCfg *config.GameConfig,
 ) *GameContainer {
 	return &GameContainer{
-		gameModule: game.NewGameModule(auth, ledgerClient, cooldown),
+		gameModule: game.NewGameModule(auth, ledgerClient, gameCfg),
 	}
 }
 

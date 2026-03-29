@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/rand"
+	"rgb-game/config"
 	"sync"
 	"time"
 
@@ -34,13 +35,13 @@ type GameService struct {
 
 	auth         interfaces.FullAuthority
 	ledgerClient pb.LedgerServiceClient
-	cooldown     time.Duration
+	cfg          *config.GameConfig
 }
 
 func newGameService(
 	auth interfaces.FullAuthority,
 	ledgerClient pb.LedgerServiceClient,
-	cooldown time.Duration,
+	cfg *config.GameConfig,
 ) *GameService {
 	return &GameService{
 		missions:            make(map[string]*missionRecord),
@@ -48,7 +49,7 @@ func newGameService(
 		playerLastComplete:  make(map[string]time.Time),
 		auth:                auth,
 		ledgerClient:        ledgerClient,
-		cooldown:            cooldown,
+		cfg:                 cfg,
 	}
 }
 
@@ -68,8 +69,8 @@ func (s *GameService) RequestMission(_ context.Context, req *pb.RequestMissionRe
 	// Enforce cooldown since last completion.
 	if lastComplete, ok := s.playerLastComplete[playerID]; ok {
 		elapsed := time.Since(lastComplete)
-		if elapsed < s.cooldown {
-			remaining := int32((s.cooldown - elapsed).Seconds())
+		if elapsed < s.cfg.Cooldown() {
+			remaining := int32((s.cfg.Cooldown() - elapsed).Seconds())
 			logger.Infof("Player %s is on cooldown, %ds remaining", playerID, remaining)
 			return &pb.MissionResponse{
 				CooldownSeconds: remaining,
@@ -92,7 +93,7 @@ func (s *GameService) RequestMission(_ context.Context, req *pb.RequestMissionRe
 	return &pb.MissionResponse{
 		MissionId:       missionID,
 		RewardColor:     rewardColor,
-		CooldownSeconds: int32(s.cooldown.Seconds()),
+		CooldownSeconds: int32(s.cfg.Cooldown().Seconds()),
 	}, nil
 }
 
@@ -115,8 +116,8 @@ func (s *GameService) CompleteMission(ctx context.Context, req *pb.CompleteMissi
 
 	// Cooldown must have elapsed since the mission was issued.
 	elapsed := time.Since(record.IssuedAt)
-	if elapsed < s.cooldown {
-		remaining := int32((s.cooldown - elapsed).Seconds())
+	if elapsed < s.cfg.Cooldown() {
+		remaining := int32((s.cfg.Cooldown() - elapsed).Seconds())
 		s.mu.Unlock()
 		return &pb.CompleteMissionResponse{
 			Success:      false,

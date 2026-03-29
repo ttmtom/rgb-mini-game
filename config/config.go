@@ -41,6 +41,7 @@ func InitLedgerConfig() (*LedgerConfig, error) {
 // GameServerFullConfig holds all configuration for the Game Server binary.
 type GameServerFullConfig struct {
 	GameServerConfig *GameServerConfig
+	GameConfig       *GameConfig
 }
 
 // InitGameServerFullConfig builds the full configuration for the Game Server binary.
@@ -49,5 +50,6 @@ func InitGameServerFullConfig() (*GameServerFullConfig, error) {
 
 	return &GameServerFullConfig{
 		GameServerConfig: InitGameServerConfig(),
+		GameConfig:       InitGameConfig(),
 	}, nil
 }

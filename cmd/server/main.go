@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"net"
-	"time"
-
 	"rgb-game/config"
 	"rgb-game/internal/adapter/authority"
 	"rgb-game/internal/core/container"
@@ -47,10 +45,9 @@ func main() {
 	ledgerClient := pb.NewLedgerServiceClient(ledgerConn)
 
 	// ── DI Container & gRPC ─────────────────────────────────────────────
-	cooldown := time.Duration(gsCfg.MissionCooldownSeconds) * time.Second
 	grpcServer := grpc.NewServer()
 
-	gameContainer := container.NewGameContainer(auth, ledgerClient, cooldown)
+	gameContainer := container.NewGameContainer(auth, ledgerClient, cfg.GameConfig)
 	gameContainer.ServerRegister(grpcServer)
 
 	// ── Listen ──────────────────────────────────────────────────────────

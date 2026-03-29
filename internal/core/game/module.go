@@ -1,8 +1,7 @@
 package game
 
 import (
-	"time"
-
+	"rgb-game/config"
 	"rgb-game/internal/core/interfaces"
 	"rgb-game/pkg/pb"
 )
@@ -15,10 +14,10 @@ type GameModule struct {
 func NewGameModule(
 	auth interfaces.FullAuthority,
 	ledgerClient pb.LedgerServiceClient,
-	cooldown time.Duration,
+	cfg *config.GameConfig,
 ) *GameModule {
 	return &GameModule{
-		service: newGameService(auth, ledgerClient, cooldown),
+		service: newGameService(auth, ledgerClient, cfg),
 	}
 }
 
