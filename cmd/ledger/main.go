@@ -6,7 +6,6 @@ import (
 	"rgb-game/config"
 	"rgb-game/internal/adapter/authority"
 	"rgb-game/internal/adapter/postgres"
-	"rgb-game/internal/adapter/postgres/repositories"
 	"rgb-game/internal/core/container"
 	"rgb-game/internal/core/game_engine"
 	"rgb-game/pkg/logger"
@@ -39,17 +38,13 @@ func main() {
 	}
 	db := pg.DB()
 
-	// ── Repositories ────────────────────────────────────────────────────
-	playerRepo := repositories.NewPlayerRepository(db)
-	txRepo := repositories.NewTransactionRepository(db)
-
 	// ── Game Engine ─────────────────────────────────────────────────────
 	ge := game_engine.NewGameEngine()
 
 	// ── DI Container & gRPC ─────────────────────────────────────────────
 	grpcServer := grpc.NewServer()
 
-	ledgerContainer := container.NewLedgerContainer(db, playerRepo, txRepo, ge, authorityPubKey)
+	ledgerContainer := container.NewLedgerContainer(db, ge, authorityPubKey)
 	ledgerContainer.ServerRegister(grpcServer)
 
 	// ── Listen ──────────────────────────────────────────────────────────

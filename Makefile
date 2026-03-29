@@ -9,7 +9,3 @@ migrate:
 
 build-ledger:
 	go build -o bin/ledger cmd/ledger/main.go
-
-build-migrate:
-	go build -o bin/migrate cmd/migrate/main.go
-
