@@ -5,6 +5,7 @@ import (
 	"net"
 	"rgb-game/config"
 	"rgb-game/internal/adapter/authority"
+	redisadapter "rgb-game/internal/adapter/redis"
 	"rgb-game/internal/core/container"
 	"rgb-game/pkg/crypto"
 	"rgb-game/pkg/logger"
@@ -35,6 +36,13 @@ func main() {
 	logger.Infof("Authority Public Key (hex): %x", auth.PubKey())
 	logger.Infof("Set AUTHORITY_PUB_KEY=%x in the Ledger .env if not using a shared key file", auth.PubKey())
 
+	// ── Redis ───────────────────────────────────────────────────────────
+	redisClient, err := redisadapter.Init(cfg.RedisConfig)
+	if err != nil {
+		logger.Fatalf("failed to connect to Redis: %v", err)
+	}
+	defer redisClient.Close()
+
 	// ── Ledger gRPC client ──────────────────────────────────────────────
 	logger.Infof("Connecting to Ledger at %s", gsCfg.LedgerAddr)
 	ledgerConn, err := grpc.NewClient(gsCfg.LedgerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -47,7 +55,7 @@ func main() {
 	// ── DI Container & gRPC ─────────────────────────────────────────────
 	grpcServer := grpc.NewServer()
 
-	gameContainer := container.NewGameContainer(auth, ledgerClient, cfg.GameConfig)
+	gameContainer := container.NewGameContainer(redisClient, auth, ledgerClient, cfg.GameConfig)
 	gameContainer.ServerRegister(grpcServer)
 
 	// ── Listen ──────────────────────────────────────────────────────────

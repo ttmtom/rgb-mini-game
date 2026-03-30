@@ -42,6 +42,7 @@ func InitLedgerConfig() (*LedgerConfig, error) {
 type GameServerFullConfig struct {
 	GameServerConfig *GameServerConfig
 	GameConfig       *GameConfig
+	RedisConfig      *RedisConfig
 }
 
 // InitGameServerFullConfig builds the full configuration for the Game Server binary.
@@ -51,5 +52,6 @@ func InitGameServerFullConfig() (*GameServerFullConfig, error) {
 	return &GameServerFullConfig{
 		GameServerConfig: InitGameServerConfig(),
 		GameConfig:       InitGameConfig(),
+		RedisConfig:      InitRedisConfig(),
 	}, nil
 }

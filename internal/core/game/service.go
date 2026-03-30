@@ -4,95 +4,56 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"math/rand"
 	"rgb-game/config"
-	"sync"
-	"time"
-
 	"rgb-game/internal/core/interfaces"
+	missionpkg "rgb-game/internal/core/mission"
 	"rgb-game/pkg/logger"
 	"rgb-game/pkg/pb"
+	"time"
 
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 )
-
-// missionRecord holds the in-memory state of an issued mission.
-type missionRecord struct {
-	PlayerID    string
-	RewardColor pb.RewardColor
-	IssuedAt    time.Time
-}
 
 // GameService implements pb.GameServiceServer.
 type GameService struct {
 	pb.UnimplementedGameServiceServer
 
-	mu                  sync.RWMutex
-	missions            map[string]*missionRecord // missionID → record
-	playerActiveMission map[string]string         // playerID → active missionID
-	playerLastComplete  map[string]time.Time      // playerID → last completion time
-
+	missionSvc   *missionpkg.MissionService
 	auth         interfaces.FullAuthority
 	ledgerClient pb.LedgerServiceClient
 	cfg          *config.GameConfig
 }
 
 func newGameService(
+	missionSvc *missionpkg.MissionService,
 	auth interfaces.FullAuthority,
 	ledgerClient pb.LedgerServiceClient,
 	cfg *config.GameConfig,
 ) *GameService {
 	return &GameService{
-		missions:            make(map[string]*missionRecord),
-		playerActiveMission: make(map[string]string),
-		playerLastComplete:  make(map[string]time.Time),
-		auth:                auth,
-		ledgerClient:        ledgerClient,
-		cfg:                 cfg,
+		missionSvc:   missionSvc,
+		auth:         auth,
+		ledgerClient: ledgerClient,
+		cfg:          cfg,
 	}
 }
 
 // RequestMission issues a new mission for the given player.
-func (s *GameService) RequestMission(_ context.Context, req *pb.RequestMissionRequest) (*pb.MissionResponse, error) {
+func (s *GameService) RequestMission(ctx context.Context, req *pb.RequestMissionRequest) (*pb.MissionResponse, error) {
 	playerID := req.GetPlayerId()
 	logger.Infof("RequestMission for player %s", playerID)
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	// Reject if player already has an active (uncompleted) mission.
-	if activeMissionID, ok := s.playerActiveMission[playerID]; ok {
-		return nil, fmt.Errorf("player %s already has an active mission %s", playerID, activeMissionID)
+	record, cooldownRemaining, err := s.missionSvc.RequestMission(ctx, playerID)
+	if err != nil {
+		return nil, err
+	}
+	if cooldownRemaining > 0 {
+		return &pb.MissionResponse{CooldownSeconds: cooldownRemaining}, nil
 	}
 
-	// Enforce cooldown since last completion.
-	if lastComplete, ok := s.playerLastComplete[playerID]; ok {
-		elapsed := time.Since(lastComplete)
-		if elapsed < s.cfg.Cooldown() {
-			remaining := int32((s.cfg.Cooldown() - elapsed).Seconds())
-			logger.Infof("Player %s is on cooldown, %ds remaining", playerID, remaining)
-			return &pb.MissionResponse{
-				CooldownSeconds: remaining,
-			}, nil
-		}
-	}
-
-	// Issue new mission.
-	missionID := uuid.New().String()
-	rewardColor := pb.RewardColor(rand.Intn(3)) // RED=0, GREEN=1, BLUE=2
-
-	s.missions[missionID] = &missionRecord{
-		PlayerID:    playerID,
-		RewardColor: rewardColor,
-		IssuedAt:    time.Now(),
-	}
-	s.playerActiveMission[playerID] = missionID
-
-	logger.Infof("Issued mission %s to player %s (reward=%s)", missionID, playerID, rewardColor)
 	return &pb.MissionResponse{
-		MissionId:       missionID,
-		RewardColor:     rewardColor,
+		MissionId:       record.ID,
+		RewardColor:     pb.RewardColor(record.RewardColor),
 		CooldownSeconds: int32(s.cfg.Cooldown().Seconds()),
 	}, nil
 }
@@ -103,30 +64,10 @@ func (s *GameService) CompleteMission(ctx context.Context, req *pb.CompleteMissi
 	playerID := req.GetPlayerId()
 	logger.Infof("CompleteMission %s for player %s", missionID, playerID)
 
-	s.mu.Lock()
-	record, exists := s.missions[missionID]
-	if !exists {
-		s.mu.Unlock()
-		return &pb.CompleteMissionResponse{Success: false, ErrorMessage: "mission not found"}, nil
+	record, err := s.missionSvc.ValidateAndComplete(ctx, missionID, playerID)
+	if err != nil {
+		return &pb.CompleteMissionResponse{Success: false, ErrorMessage: err.Error()}, nil
 	}
-	if record.PlayerID != playerID {
-		s.mu.Unlock()
-		return &pb.CompleteMissionResponse{Success: false, ErrorMessage: "mission does not belong to this player"}, nil
-	}
-
-	// Cooldown must have elapsed since the mission was issued.
-	elapsed := time.Since(record.IssuedAt)
-	if elapsed < s.cfg.Cooldown() {
-		remaining := int32((s.cfg.Cooldown() - elapsed).Seconds())
-		s.mu.Unlock()
-		return &pb.CompleteMissionResponse{
-			Success:      false,
-			ErrorMessage: fmt.Sprintf("mission not yet ready, %ds remaining", remaining),
-		}, nil
-	}
-
-	rewardColor := record.RewardColor
-	s.mu.Unlock()
 
 	// Fetch authority's current nonce from the Ledger.
 	balResp, err := s.ledgerClient.GetBalance(ctx, &pb.GetBalanceRequest{PlayerId: s.auth.PlayerID()})
@@ -136,7 +77,7 @@ func (s *GameService) CompleteMission(ctx context.Context, req *pb.CompleteMissi
 
 	// Build the MINT payload.
 	var amtRed, amtGreen, amtBlue uint32
-	switch rewardColor {
+	switch pb.RewardColor(record.RewardColor) {
 	case pb.RewardColor_RED:
 		amtRed = 1
 	case pb.RewardColor_GREEN:
@@ -175,13 +116,6 @@ func (s *GameService) CompleteMission(ctx context.Context, req *pb.CompleteMissi
 	if !txResp.GetSuccess() {
 		return &pb.CompleteMissionResponse{Success: false, ErrorMessage: txResp.GetErrorMessage()}, nil
 	}
-
-	// Clean up mission state.
-	s.mu.Lock()
-	delete(s.missions, missionID)
-	delete(s.playerActiveMission, playerID)
-	s.playerLastComplete[playerID] = time.Now()
-	s.mu.Unlock()
 
 	logger.Infof("Mission %s completed, tx=%s", missionID, txResp.GetTxHash())
 	return &pb.CompleteMissionResponse{

@@ -3,6 +3,7 @@ package game
 import (
 	"rgb-game/config"
 	"rgb-game/internal/core/interfaces"
+	missionpkg "rgb-game/internal/core/mission"
 	"rgb-game/pkg/pb"
 )
 
@@ -12,12 +13,13 @@ type GameModule struct {
 }
 
 func NewGameModule(
+	missionModule *missionpkg.MissionModule,
 	auth interfaces.FullAuthority,
 	ledgerClient pb.LedgerServiceClient,
 	cfg *config.GameConfig,
 ) *GameModule {
 	return &GameModule{
-		service: newGameService(auth, ledgerClient, cfg),
+		service: newGameService(missionModule.Service(), auth, ledgerClient, cfg),
 	}
 }
 

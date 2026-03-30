@@ -1,4 +1,13 @@
 services:
+    redis:
+        image: redis:8.6.2-alpine
+        hostname: redis
+        container_name: redis
+        ports:
+            - "6379:6379"
+        volumes:
+            - ./.data/redis:/data
+
     postgres:
         image: postgres:17.0
         hostname: postgres
