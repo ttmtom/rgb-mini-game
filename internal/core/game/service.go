@@ -9,7 +9,7 @@ import (
 	missionpkg "rgb-game/internal/core/mission"
 	"rgb-game/pkg/logger"
 	"rgb-game/pkg/pb"
-	"time"
+	"sync"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -22,6 +22,7 @@ type GameService struct {
 	auth         interfaces.FullAuthority
 	ledgerClient pb.LedgerServiceClient
 	cfg          *config.GameConfig
+	mintMu       sync.Mutex // serialises MINT submissions to avoid authority nonce conflicts
 }
 
 func newGameService(
@@ -69,6 +70,11 @@ func (s *GameService) CompleteMission(ctx context.Context, req *pb.CompleteMissi
 		return &pb.CompleteMissionResponse{Success: false, ErrorMessage: err.Error()}, nil
 	}
 
+	// Serialise MINT submissions so concurrent CompleteMission calls don't
+	// race for the same authority nonce.
+	s.mintMu.Lock()
+	defer s.mintMu.Unlock()
+
 	// Fetch authority's current nonce from the Ledger.
 	balResp, err := s.ledgerClient.GetBalance(ctx, &pb.GetBalanceRequest{PlayerId: s.auth.PlayerID()})
 	if err != nil {
@@ -94,7 +100,6 @@ func (s *GameService) CompleteMission(ctx context.Context, req *pb.CompleteMissi
 		AmountGreen: amtGreen,
 		AmountBlue:  amtBlue,
 		Nonce:       balResp.GetNextNonce(),
-		Timestamp:   time.Now().Unix(),
 	}
 
 	rawPayload, err := proto.Marshal(payload)

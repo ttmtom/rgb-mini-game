@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
+	"os/signal"
 	"rgb-game/config"
 	"rgb-game/internal/adapter/authority"
 	redisadapter "rgb-game/internal/adapter/redis"
@@ -10,6 +12,7 @@ import (
 	"rgb-game/pkg/crypto"
 	"rgb-game/pkg/logger"
 	"rgb-game/pkg/pb"
+	"syscall"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -65,7 +68,19 @@ func main() {
 	}
 
 	logger.Infof("Game Server gRPC listening on %v", lis.Addr())
-	if err := grpcServer.Serve(lis); err != nil {
-		logger.Fatalf("failed to serve: %v", err)
-	}
+
+	// Serve in the background so we can handle shutdown signals.
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			logger.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	// Wait for SIGINT or SIGTERM, then drain in-flight RPCs.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-quit
+	logger.Infof("Received %s, shutting down gracefully…", sig)
+	grpcServer.GracefulStop()
+	logger.Info("Game Server stopped")
 }

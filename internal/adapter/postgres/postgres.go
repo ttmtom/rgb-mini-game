@@ -13,14 +13,17 @@ type Postgres struct {
 }
 
 func Init(config *config.DatabaseConfig) (*Postgres, error) {
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		config.User,
-		config.Password,
-		config.Host,
-		config.Port,
-		config.DBName,
-		config.SSLMode,
-	)
+	dsn := config.URL
+	if dsn == "" {
+		dsn = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+			config.User,
+			config.Password,
+			config.Host,
+			config.Port,
+			config.DBName,
+			config.SSLMode,
+		)
+	}
 
 	PostgresDb, dbOpenErr := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 

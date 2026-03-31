@@ -264,7 +264,6 @@ type TransactionPayload struct {
 	AmountGreen   uint32                    `protobuf:"varint,5,opt,name=amount_green,json=amountGreen,proto3" json:"amount_green,omitempty"`
 	AmountBlue    uint32                    `protobuf:"varint,6,opt,name=amount_blue,json=amountBlue,proto3" json:"amount_blue,omitempty"`
 	Nonce         uint64                    `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	Timestamp     int64                     `protobuf:"varint,8,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -344,13 +343,6 @@ func (x *TransactionPayload) GetAmountBlue() uint32 {
 func (x *TransactionPayload) GetNonce() uint64 {
 	if x != nil {
 		return x.Nonce
-	}
-	return 0
-}
-
-func (x *TransactionPayload) GetTimestamp() int64 {
-	if x != nil {
-		return x.Timestamp
 	}
 	return 0
 }
@@ -441,7 +433,7 @@ const file_api_proto_v1_ledger_proto_rawDesc = "" +
 	"\vraw_payload\x18\x01 \x01(\fR\n" +
 	"rawPayload\x12\x1c\n" +
 	"\tsignature\x18\x02 \x01(\fR\tsignature\x12$\n" +
-	"\x0esender_pub_key\x18\x03 \x01(\fR\fsenderPubKey\"\xc9\x02\n" +
+	"\x0esender_pub_key\x18\x03 \x01(\fR\fsenderPubKey\"\xab\x02\n" +
 	"\x12TransactionPayload\x12<\n" +
 	"\x04type\x18\x01 \x01(\x0e2(.rgb.ledger.v1.TransactionPayload.TxTypeR\x04type\x12\x1b\n" +
 	"\tsender_id\x18\x02 \x01(\tR\bsenderId\x12\x1f\n" +
@@ -452,8 +444,7 @@ const file_api_proto_v1_ledger_proto_rawDesc = "" +
 	"\famount_green\x18\x05 \x01(\rR\vamountGreen\x12\x1f\n" +
 	"\vamount_blue\x18\x06 \x01(\rR\n" +
 	"amountBlue\x12\x14\n" +
-	"\x05nonce\x18\a \x01(\x04R\x05nonce\x12\x1c\n" +
-	"\ttimestamp\x18\b \x01(\x03R\ttimestamp\" \n" +
+	"\x05nonce\x18\a \x01(\x04R\x05nonce\" \n" +
 	"\x06TxType\x12\f\n" +
 	"\bTRANSFER\x10\x00\x12\b\n" +
 	"\x04MINT\x10\x01\"\xb4\x01\n" +

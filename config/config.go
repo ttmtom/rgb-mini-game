@@ -7,11 +7,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type Config struct {
-	DatabaseConfig *DatabaseConfig
-	ServerConfig   *ServerConfig
-}
-
 // LedgerConfig holds all configuration for the Ledger binary.
 type LedgerConfig struct {
 	DatabaseConfig  *DatabaseConfig

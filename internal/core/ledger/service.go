@@ -5,13 +5,12 @@ import (
 	"context"
 	"crypto/ed25519"
 	"fmt"
-	"time"
-
 	"rgb-game/internal/core/interfaces"
 	"rgb-game/internal/core/types"
 	"rgb-game/pkg/crypto"
 	"rgb-game/pkg/logger"
 	"rgb-game/pkg/pb"
+	"time"
 
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
@@ -125,7 +124,7 @@ func (s *LedgerService) SubmitTransaction(ctx context.Context, req *pb.SubmitTra
 	txHash := uuid.New().String()
 	var newBalance *pb.BalanceResponse
 
-	// 5. Execute inside a DB transaction (SELECT FOR UPDATE on both rows)
+	// 7. Execute inside a DB transaction (SELECT FOR UPDATE on both rows)
 	dbErr := s.db.Transaction(func(tx *gorm.DB) error {
 		senderModel, err := s.playerRepo.FindOrCreate(tx, payload.GetSenderId())
 		if err != nil {

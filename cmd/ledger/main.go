@@ -3,12 +3,15 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
+	"os/signal"
 	"rgb-game/config"
 	"rgb-game/internal/adapter/authority"
 	"rgb-game/internal/adapter/postgres"
 	"rgb-game/internal/core/container"
 	"rgb-game/internal/core/game_engine"
 	"rgb-game/pkg/logger"
+	"syscall"
 
 	"google.golang.org/grpc"
 )
@@ -55,7 +58,18 @@ func main() {
 
 	logger.Infof("Ledger gRPC server listening on %v", lis.Addr())
 
-	if err := grpcServer.Serve(lis); err != nil {
-		logger.Fatalf("failed to serve: %v", err)
-	}
+	// Serve in the background so we can handle shutdown signals.
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			logger.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	// Wait for SIGINT or SIGTERM, then drain in-flight RPCs.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-quit
+	logger.Infof("Received %s, shutting down gracefully…", sig)
+	grpcServer.GracefulStop()
+	logger.Info("Ledger server stopped")
 }

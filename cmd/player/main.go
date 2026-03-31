@@ -226,7 +226,6 @@ func doTransfer(client pb.LedgerServiceClient, playerID string, keypair *crypto.
 		AmountGreen: green,
 		AmountBlue:  blue,
 		Nonce:       nonce,
-		Timestamp:   time.Now().Unix(),
 	}
 
 	rawPayload, err := proto.Marshal(payload)

@@ -13,15 +13,15 @@ func NewGameEngine() *GameEngine {
 }
 
 // calculation adds val (signed delta) to color, clamping the result to [0, 255].
-func (ge *GameEngine) calculation(color uint8, val int8) (uint8, *error) {
+func (ge *GameEngine) calculation(color uint8, val int8) uint8 {
 	result := int16(color) + int16(val)
 	if result < 0 {
-		return 0, nil
+		return 0
 	}
 	if result > 255 {
-		return 255, nil
+		return 255
 	}
-	return uint8(result), nil
+	return uint8(result)
 }
 
 // clampUint8 clamps an int32 value to the uint8 range [0, 255].
@@ -99,9 +99,9 @@ func (ge *GameEngine) PlayerCompleteMission(play *types.PlayerState, mission *ty
 		return nil, errors.New("player state and mission must not be nil")
 	}
 
-	newR, _ := ge.calculation(play.R, mission.Reward.R)
-	newG, _ := ge.calculation(play.G, mission.Reward.G)
-	newB, _ := ge.calculation(play.B, mission.Reward.B)
+	newR := ge.calculation(play.R, mission.Reward.R)
+	newG := ge.calculation(play.G, mission.Reward.G)
+	newB := ge.calculation(play.B, mission.Reward.B)
 
 	return &types.PlayerState{
 		R:     newR,
