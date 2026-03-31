@@ -13,5 +13,8 @@ build-ledger:
 build-server:
 	go build -o bin/server cmd/server/main.go
 
-build-all: build-ledger build-server
+build-player:
+	go build -o bin/player cmd/player/main.go
+
+build-all: build-ledger build-server build-player
 

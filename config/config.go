@@ -55,3 +55,17 @@ func InitGameServerFullConfig() (*GameServerFullConfig, error) {
 		RedisConfig:      InitRedisConfig(),
 	}, nil
 }
+
+// PlayerFullConfig holds all configuration for the Player CLI binary.
+type PlayerFullConfig struct {
+	PlayerConfig *PlayerConfig
+}
+
+// InitPlayerFullConfig builds the full configuration for the Player CLI binary.
+func InitPlayerFullConfig() (*PlayerFullConfig, error) {
+	loadEnv()
+
+	return &PlayerFullConfig{
+		PlayerConfig: InitPlayerConfig(),
+	}, nil
+}
