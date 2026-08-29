@@ -18,3 +18,12 @@ build-player:
 
 build-all: build-ledger build-server build-player
 
+run-ledger:
+	go run cmd/ledger/main.go
+
+run-server:
+	go run cmd/server/main.go
+
+run-player:
+	go run cmd/player/main.go
+

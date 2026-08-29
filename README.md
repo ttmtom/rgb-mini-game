@@ -4,9 +4,14 @@ A distributed blockchain mini-game built with Go, gRPC, PostgreSQL and Redis.
 Players complete missions to earn RGB tokens, then freely transfer them between each other. All token state is persisted
 on a tamper-resistant ledger backed by Postgres.
 
+The codebase follows **Hexagonal Architecture** (Ports & Adapters), keeping domain logic and application use cases
+completely independent of transport and infrastructure concerns.
+
 ---
 
 ## Architecture
+
+### System topology
 
 Three independent binaries communicate over gRPC:
 
@@ -31,12 +36,47 @@ Three independent binaries communicate over gRPC:
 | **Game Server** | `cmd/server/main.go` | `50052`      |
 | **Player CLI**  | `cmd/player/main.go` | —            |
 
-- **Ledger** — validates and persists every transaction (MINT & TRANSFER) in Postgres. Verifies ed25519 signatures and
-  enforces the authority public-key rule for minting.
+- **Ledger** — validates and persists every transaction (MINT & TRANSFER) in Postgres. The gRPC driving adapter
+  verifies ed25519 signatures and enforces the authority public-key rule; the application service receives only
+  pre-verified, typed requests.
 - **Game Server** — issues missions to players and mints reward tokens via signed MINT transactions sent to the Ledger.
   Stores active mission state in Redis with a configurable cooldown.
 - **Player CLI** — interactive terminal client. Lets a player check their balance, request/complete missions, and
   transfer tokens to other players.
+
+### Layered design
+
+```
+        ┌─────────────────────────────────────┐
+        │            Domain Ring               │
+        │  internal/domain/{types,enum,engine} │
+        └───────────────┬─────────────────────┘
+                        │ used by
+        ┌───────────────▼─────────────────────┐
+        │          Application Ring            │
+        │    internal/app/{port,service}       │
+        │  port/in  ← use-case interfaces      │
+        │  port/out → infrastructure ports     │
+        └────────────┬────────────┬────────────┘
+                     │            │
+       ┌─────────────▼──┐   ┌─────▼──────────────┐
+       │ Driving Adapters│   │  Driven Adapters    │
+       │ (Left / Primary)│   │ (Right / Secondary) │
+       │ adapter/driving │   │ adapter/driven      │
+       │  grpc/ledger    │   │  postgres/          │
+       │  grpc/game      │   │  redis/             │
+       └─────────────────┘   │  authority/         │
+                             │  ledger/            │
+                             └─────────────────────┘
+```
+
+| Layer | Rule |
+|---|---|
+| **Domain** (`internal/domain/`) | Zero external imports — only stdlib |
+| **Application** (`internal/app/`) | Imports domain only — no `pkg/pb`, no gorm |
+| **Driving adapters** (`adapter/driving/`) | Own all transport concerns (proto, crypto) |
+| **Driven adapters** (`adapter/driven/`) | Implement out-ports; own all infra concerns |
+| **`cmd/`** | Wires all layers; no business logic |
 
 ---
 
@@ -77,13 +117,7 @@ Then edit `.env` — the key values that need your attention:
 > **Note:** `POSTGRES_URL` is intentionally ignored — the Ledger always reconstructs the DSN from the individual
 `POSTGRES_*` variables.
 
-### 3 — Run database migrations
-
-```sh
-make migrate
-```
-
-### 4 — Generate the authority keypair
+### 3 — Generate the authority keypair
 
 ```sh
 make keygen
@@ -96,6 +130,12 @@ This writes two files:
 | `.key/id_ed25519`         | JSON keypair (used by Game Server)                                 |
 | `.key/id_ed25519.pub.hex` | Bare hex public key — copy this into `AUTHORITY_PUB_KEY` in `.env` |
 
+### 4 — Run database migrations
+
+```sh
+make migrate
+```
+
 ### 5 — Build all binaries
 
 ```sh
@@ -105,18 +145,20 @@ make build-all
 
 ### 6 — Run the services
 
-Open three terminals (or run as background processes):
+Open three terminals. **Start in order** — each service depends on the one before it:
 
 ```sh
-# Terminal 1 — Ledger
-go run cmd/ledger/main.go
+# Terminal 1 — Ledger (must be up first)
+make run-ledger
 
-# Terminal 2 — Game Server
-go run cmd/server/main.go
+# Terminal 2 — Game Server (connects to Ledger on start)
+make run-server
 
-# Terminal 3 — Player CLI
-go run cmd/player/main.go
+# Terminal 3 — Player CLI (connects to both)
+make run-player
 ```
+
+> **Tip:** To run a pre-built binary instead, use `make build-all` first, then `./bin/ledger`, `./bin/server`, `./bin/player`.
 
 ---
 
@@ -188,7 +230,8 @@ a new one.
 - **Player / authority ID** = `hex(sha256(ed25519_pubkey))`
 - Every transaction is a signed `TransactionPayload` protobuf:  
   `raw_payload | signature | sender_pub_key`
-- The Ledger verifies: `sha256(sender_pub_key) == payload.sender_id` **and** the signature is valid.
+- The Ledger **gRPC driving adapter** verifies: `sha256(sender_pub_key) == payload.sender_id` **and** the signature is
+  valid. The application service (`LedgerService`) receives only pre-verified, typed data.
 - **MINT** transactions additionally require `sender_pub_key == AUTHORITY_PUB_KEY`. The authority (Game Server) needs no
   prior balance.
 
@@ -212,31 +255,39 @@ make build-all       # compile all three binaries
 
 ```
 cmd/
-  ledger/       Ledger entry point
-  server/       Game Server entry point
-  player/       Player CLI entry point
-  keygen/       Authority keypair generator
-  migrate/      Database migration runner
-config/         Env-based config structs
+  ledger/           Ledger entry point & DI wiring
+  server/           Game Server entry point & DI wiring
+  player/           Player CLI entry point
+  keygen/           Authority keypair generator
+  migrate/          Database migration runner
+config/             Env-based config structs
 internal/
+  domain/           Pure domain ring (no external imports)
+    types/          PlayerRecord, PlayerState, TransactionRecord, MissionRecord, RGB
+    enum/           Color (Red/Green/Blue)
+    engine/         Game calculation logic (PlayerTransactions, PlayerCompleteMission)
+  app/              Application ring
+    port/
+      in/           Primary ports — LedgerUseCase, GameUseCase + request/result types
+      out/          Secondary ports — Transactor, PlayerRepository, TransactionRepository,
+                    MissionRepository, GameEngine, PublicAuthority, FullAuthority, LedgerClient
+    service/        LedgerService, GameService, missionService (no pb/gorm imports)
   adapter/
-    authority/  ed25519 authority adapter
-    postgres/   GORM repositories + migrations
-    redis/      Mission state repository
-  core/
-    container/  Dependency-injection wiring
-    game/       GameService (missions, minting)
-    game_engine/Balance calculation logic
-    ledger/     LedgerService (tx validation)
-    interfaces/ Core abstractions
-    types/      Domain types (RGB, PlayerRecord, Mission…)
-    enum/       Color enum
-api/proto/v1/   Protobuf definitions (ledger.proto, game.proto)
+    driving/        Left-side (primary) adapters — receive gRPC, call use cases
+      grpc/
+        ledger/     pb.LedgerServiceServer — owns crypto verification
+        game/       pb.GameServiceServer
+    driven/         Right-side (secondary) adapters — implement out/ ports
+      postgres/     GormTransactor + PlayerRepository + TransactionRepository
+      redis/        MissionRepository (TTL-based)
+      authority/    PublicAuthority + FullAuthority + Load()
+      ledger/       LedgerClient — wraps pb.LedgerServiceClient, handles signing
+api/proto/v1/       Protobuf definitions (ledger.proto, game.proto)
 pkg/
-  pb/           Generated gRPC code
-  crypto/       Key generation, signing helpers
-  logger/       slog-based structured logger
-  utils/        Env helpers
+  pb/               Generated gRPC code
+  crypto/           Key generation, signing helpers
+  logger/           slog-based structured logger
+  utils/            Env helpers
 ```
 
 ---
