@@ -6,11 +6,14 @@ import (
 	"os"
 	"os/signal"
 	"rgb-game/config"
-	"rgb-game/internal/adapter/authority"
-	"rgb-game/internal/adapter/postgres"
-	"rgb-game/internal/core/container"
-	"rgb-game/internal/core/game_engine"
+	"rgb-game/internal/adapter/driven/authority"
+	drivenpostgres "rgb-game/internal/adapter/driven/postgres"
+	"rgb-game/internal/adapter/driven/postgres/repositories"
+	grpcledger "rgb-game/internal/adapter/driving/grpc/ledger"
+	"rgb-game/internal/app/service"
+	"rgb-game/internal/domain/engine"
 	"rgb-game/pkg/logger"
+	"rgb-game/pkg/pb"
 	"syscall"
 
 	"google.golang.org/grpc"
@@ -35,37 +38,40 @@ func main() {
 
 	// ── Postgres ────────────────────────────────────────────────────────
 	logger.Info("Connecting to Postgres")
-	pg, err := postgres.Init(cfg.DatabaseConfig)
+	pg, err := drivenpostgres.Init(cfg.DatabaseConfig)
 	if err != nil {
 		logger.Fatalf("failed to connect to Postgres: %v", err)
 	}
 	db := pg.DB()
 
-	// ── Game Engine ─────────────────────────────────────────────────────
-	ge := game_engine.NewGameEngine()
+	// ── Driven adapters (repositories + transactor) ──────────────────────
+	playerRepo := repositories.NewPlayerRepository(db)
+	txRepo := repositories.NewTransactionRepository(db)
+	transactor := repositories.NewTransactor(db)
 
-	// ── DI Container & gRPC ─────────────────────────────────────────────
+	// ── Domain engine ────────────────────────────────────────────────────
+	ge := engine.New()
+
+	// ── Application service ──────────────────────────────────────────────
+	ledgerSvc := service.NewLedgerService(playerRepo, txRepo, transactor, ge)
+
+	// ── Driving adapter (gRPC handler) ───────────────────────────────────
 	grpcServer := grpc.NewServer()
-
-	ledgerContainer := container.NewLedgerContainer(db, ge, auth)
-	ledgerContainer.ServerRegister(grpcServer)
+	pb.RegisterLedgerServiceServer(grpcServer, grpcledger.New(ledgerSvc, auth))
 
 	// ── Listen ──────────────────────────────────────────────────────────
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.ServerConfig.Port))
 	if err != nil {
 		logger.Fatalf("failed to listen: %v", err)
 	}
-
 	logger.Infof("Ledger gRPC server listening on %v", lis.Addr())
 
-	// Serve in the background so we can handle shutdown signals.
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
 			logger.Fatalf("failed to serve: %v", err)
 		}
 	}()
 
-	// Wait for SIGINT or SIGTERM, then drain in-flight RPCs.
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit

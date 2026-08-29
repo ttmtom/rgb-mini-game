@@ -6,9 +6,11 @@ import (
 	"os"
 	"os/signal"
 	"rgb-game/config"
-	"rgb-game/internal/adapter/authority"
-	redisadapter "rgb-game/internal/adapter/redis"
-	"rgb-game/internal/core/container"
+	"rgb-game/internal/adapter/driven/authority"
+	drivenledger "rgb-game/internal/adapter/driven/ledger"
+	drivenredis "rgb-game/internal/adapter/driven/redis"
+	grpcgame "rgb-game/internal/adapter/driving/grpc/game"
+	"rgb-game/internal/app/service"
 	"rgb-game/pkg/crypto"
 	"rgb-game/pkg/logger"
 	"rgb-game/pkg/pb"
@@ -40,7 +42,7 @@ func main() {
 	logger.Infof("Set AUTHORITY_PUB_KEY=%x in the Ledger .env if not using a shared key file", auth.PubKey())
 
 	// ── Redis ───────────────────────────────────────────────────────────
-	redisClient, err := redisadapter.Init(cfg.RedisConfig)
+	redisClient, err := drivenredis.Init(cfg.RedisConfig)
 	if err != nil {
 		logger.Fatalf("failed to connect to Redis: %v", err)
 	}
@@ -53,30 +55,31 @@ func main() {
 		logger.Fatalf("failed to connect to Ledger: %v", err)
 	}
 	defer ledgerConn.Close()
-	ledgerClient := pb.NewLedgerServiceClient(ledgerConn)
 
-	// ── DI Container & gRPC ─────────────────────────────────────────────
+	// ── Driven adapters ─────────────────────────────────────────────────
+	missionRepo := drivenredis.NewMissionRepository(redisClient)
+	ledgerClient := drivenledger.New(pb.NewLedgerServiceClient(ledgerConn))
+
+	// ── Application service ──────────────────────────────────────────────
+	gameSvc := service.NewGameService(missionRepo, auth, ledgerClient, cfg.GameConfig)
+
+	// ── Driving adapter (gRPC handler) ───────────────────────────────────
 	grpcServer := grpc.NewServer()
-
-	gameContainer := container.NewGameContainer(redisClient, auth, ledgerClient, cfg.GameConfig)
-	gameContainer.ServerRegister(grpcServer)
+	pb.RegisterGameServiceServer(grpcServer, grpcgame.New(gameSvc))
 
 	// ── Listen ──────────────────────────────────────────────────────────
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", gsCfg.Port))
 	if err != nil {
 		logger.Fatalf("failed to listen: %v", err)
 	}
-
 	logger.Infof("Game Server gRPC listening on %v", lis.Addr())
 
-	// Serve in the background so we can handle shutdown signals.
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
 			logger.Fatalf("failed to serve: %v", err)
 		}
 	}()
 
-	// Wait for SIGINT or SIGTERM, then drain in-flight RPCs.
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit
