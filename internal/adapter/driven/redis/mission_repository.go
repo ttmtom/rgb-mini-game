@@ -30,6 +30,11 @@ func NewMissionRepository(client *redis.Client) *MissionRepository {
 	return &MissionRepository{client: client}
 }
 
+// minMissionTTL is the minimum lifetime for a mission key regardless of cooldown.
+// Prevents very short cooldown settings (e.g. MISSION_COOLDOWN_SECONDS=1) from
+// expiring the mission before the player can navigate the menu and complete it.
+const minMissionTTL = 5 * time.Minute
+
 // Create stores the mission JSON and an active-mission pointer for the player.
 func (r *MissionRepository) Create(ctx context.Context, record *types.MissionRecord, missionTTL time.Duration) error {
 	data, err := json.Marshal(record)
@@ -38,6 +43,9 @@ func (r *MissionRepository) Create(ctx context.Context, record *types.MissionRec
 	}
 
 	ttl := missionTTL * 2
+	if ttl < minMissionTTL {
+		ttl = minMissionTTL
+	}
 	pipe := r.client.TxPipeline()
 	pipe.SetEx(ctx, missionKey(record.ID), string(data), ttl)
 	pipe.SetEx(ctx, activeKey(record.PlayerID), record.ID, ttl)
