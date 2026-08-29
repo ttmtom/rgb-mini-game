@@ -1,7 +1,6 @@
-package migrations
+package repositories
 
 import (
-	"rgb-game/internal/adapter/postgres/repositories"
 	"rgb-game/pkg/logger"
 
 	"gorm.io/gorm"
@@ -11,7 +10,7 @@ import (
 func AutoMigrate(db *gorm.DB) error {
 	logger.Info("Running auto-migrations...")
 	return db.AutoMigrate(
-		&repositories.PlayerModel{},
-		&repositories.TransactionModel{},
+		&playerModel{},
+		&transactionModel{},
 	)
 }
