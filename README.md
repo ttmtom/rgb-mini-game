@@ -78,13 +78,13 @@ Three independent binaries communicate over gRPC:
                              └─────────────────────┘
 ```
 
-| Layer | Rule |
-|---|---|
-| **Domain** (`internal/domain/`) | Zero external imports — only stdlib |
-| **Application** (`internal/app/`) | Imports domain only — no `pkg/pb`, no gorm |
-| **Driving adapters** (`adapter/driving/`) | Own all transport concerns (proto, crypto) |
-| **Driven adapters** (`adapter/driven/`) | Implement out-ports; own all infra concerns |
-| **`cmd/`** | Wires all layers; no business logic |
+| Layer                                     | Rule                                        |
+|-------------------------------------------|---------------------------------------------|
+| **Domain** (`internal/domain/`)           | Zero external imports — only stdlib         |
+| **Application** (`internal/app/`)         | Imports domain only — no `pkg/pb`, no gorm  |
+| **Driving adapters** (`adapter/driving/`) | Own all transport concerns (proto, crypto)  |
+| **Driven adapters** (`adapter/driven/`)   | Implement out-ports; own all infra concerns |
+| **`cmd/`**                                | Wires all layers; no business logic         |
 
 ---
 
@@ -92,24 +92,24 @@ Three independent binaries communicate over gRPC:
 
 ### What is implemented
 
-| Feature | Detail |
-|---|---|
-| **Linked blocks** | Every block records `PrevHash` → genesis; tampering any block breaks all descendants |
-| **Proof-of-Work** | `BlockSealer` mines each block by incrementing `Nonce` until `sha256(block)` starts with `Difficulty` leading zero hex nibbles |
-| **Merkle tree** | `internal/domain/merkle` builds a sorted, binary-reduced SHA-256 Merkle root over all sealed transaction hashes |
-| **Chain validation** | `internal/domain/chain.ValidateChain()` re-derives every block hash, checks `PrevHash` linkage, recomputes Merkle roots, and verifies PoW difficulty — called on every Ledger startup |
-| **Cryptographic identities** | Player & authority IDs = `hex(sha256(ed25519_pubkey))`; every MINT and TRANSFER is signed by the sender |
-| **Signature verification** | The Ledger gRPC adapter verifies `sha256(sender_pub_key) == payload.sender_id` and the ed25519 signature before any application logic runs |
-| **Block sealer** | A background goroutine (`service.BlockSealer`) ticks on a configurable interval, gathers pending transactions, mines a new block, and seals them atomically inside a Postgres transaction |
+| Feature                      | Detail                                                                                                                                                                                    |
+|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Linked blocks**            | Every block records `PrevHash` → genesis; tampering any block breaks all descendants                                                                                                      |
+| **Proof-of-Work**            | `BlockSealer` mines each block by incrementing `Nonce` until `sha256(block)` starts with `Difficulty` leading zero hex nibbles                                                            |
+| **Merkle tree**              | `internal/domain/merkle` builds a sorted, binary-reduced SHA-256 Merkle root over all sealed transaction hashes                                                                           |
+| **Chain validation**         | `internal/domain/chain.ValidateChain()` re-derives every block hash, checks `PrevHash` linkage, recomputes Merkle roots, and verifies PoW difficulty — called on every Ledger startup     |
+| **Cryptographic identities** | Player & authority IDs = `hex(sha256(ed25519_pubkey))`; every MINT and TRANSFER is signed by the sender                                                                                   |
+| **Signature verification**   | The Ledger gRPC adapter verifies `sha256(sender_pub_key) == payload.sender_id` and the ed25519 signature before any application logic runs                                                |
+| **Block sealer**             | A background goroutine (`service.BlockSealer`) ticks on a configurable interval, gathers pending transactions, mines a new block, and seals them atomically inside a Postgres transaction |
 
 ### What is NOT implemented (single-node scope)
 
-| Missing | Implication |
-|---|---|
-| **P2P network** | Only one Ledger process; no peer discovery or gossip protocol |
-| **Multi-node consensus** | No mechanism for multiple nodes to agree on the canonical chain |
-| **Block propagation** | Mined blocks stay in one Postgres instance; no broadcasting |
-| **Fork resolution** | No longest-chain rule; no finality mechanism |
+| Missing                     | Implication                                                     |
+|-----------------------------|-----------------------------------------------------------------|
+| **P2P network**             | Only one Ledger process; no peer discovery or gossip protocol   |
+| **Multi-node consensus**    | No mechanism for multiple nodes to agree on the canonical chain |
+| **Block propagation**       | Mined blocks stay in one Postgres instance; no broadcasting     |
+| **Fork resolution**         | No longest-chain rule; no finality mechanism                    |
 | **Decentralised authority** | A single genesis authority keypair controls all MINT operations |
 
 ---
@@ -149,7 +149,7 @@ Then edit `.env` — the key values that need your attention:
 | `AUTHORITY_PUB_KEY`      | Alternatively paste the hex from `.key/id_ed25519.pub.hex` after step 4 |
 
 > **Note:** `POSTGRES_URL` is intentionally ignored — the Ledger always reconstructs the DSN from the individual
-`POSTGRES_*` variables.
+> `POSTGRES_*` variables.
 
 ### 3 — Generate the authority keypair
 
