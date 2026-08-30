@@ -5,10 +5,15 @@ import (
 	drivenpostgres "rgb-game/internal/adapter/driven/postgres"
 	"rgb-game/internal/adapter/driven/postgres/repositories"
 	"rgb-game/pkg/logger"
+	"rgb-game/pkg/utils"
 )
 
 func main() {
 	logger.Init()
+
+	if utils.GetEnv("APP_ENV", "dev") != "dev" {
+		logger.Fatalf("auto-migration is only allowed in dev environment; use Flyway for other environments")
+	}
 
 	logger.Info("Initializing migration config")
 	cfg, err := config.InitLedgerConfig()

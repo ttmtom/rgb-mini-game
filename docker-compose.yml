@@ -21,3 +21,21 @@ services:
         volumes:
             - ./.data/db:/var/lib/postgresql/data
         env_file: ".env"
+
+    flyway:
+        image: flyway/flyway:11
+        container_name: flyway
+        depends_on:
+            - postgres
+        volumes:
+            - ./db/migration:/flyway/sql
+        environment:
+            FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+            FLYWAY_USER: ${POSTGRES_USER}
+            FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
+            FLYWAY_CONNECT_RETRIES: 5
+            FLYWAY_BASELINE_ON_MIGRATE: true
+            FLYWAY_BASELINE_VERSION: 0
+        command: migrate
+        profiles:
+            - migrate

@@ -7,6 +7,9 @@ keygen:
 migrate:
 	go run cmd/migrate/main.go
 
+migrate-flyway:
+	docker compose --profile migrate up flyway --abort-on-container-exit --exit-code-from flyway
+
 build-ledger:
 	go build -o bin/ledger cmd/ledger/main.go
 
