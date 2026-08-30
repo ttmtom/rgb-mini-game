@@ -12,7 +12,7 @@ type Mission struct {
 type MissionRecord struct {
 	ID          string `json:"id"`
 	PlayerID    string `json:"player_id"`
-	RewardColor int32  `json:"reward_color"`
 	IssuedAt    int64  `json:"issued_at"` // unix timestamp
+	RewardColor int32  `json:"reward_color"`
 	Completed   bool   `json:"completed"`
 }

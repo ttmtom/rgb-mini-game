@@ -2,10 +2,14 @@ package service
 
 import (
 	"context"
+	"crypto/ed25519"
+	"encoding/hex"
 	"fmt"
 	"rgb-game/internal/app/port/in"
 	"rgb-game/internal/app/port/out"
+	"rgb-game/internal/domain/chain"
 	"rgb-game/internal/domain/types"
+	"rgb-game/pkg/crypto"
 	"rgb-game/pkg/logger"
 	"time"
 
@@ -15,24 +19,30 @@ import (
 // LedgerService implements in.LedgerUseCase.
 // It contains no transport-layer imports — all gRPC concerns live in the driving adapter.
 type LedgerService struct {
-	playerRepo out.PlayerRepository
-	txRepo     out.TransactionRepository
-	transactor out.Transactor
-	gameEngine out.GameEngine
+	playerRepo    out.PlayerRepository
+	txRepo        out.TransactionRepository
+	blockRepo     out.BlockRepository
+	authorityRepo out.AuthorityRepository
+	transactor    out.Transactor
+	gameEngine    out.GameEngine
 }
 
 // NewLedgerService wires up the LedgerService with its driven-port dependencies.
 func NewLedgerService(
 	playerRepo out.PlayerRepository,
 	txRepo out.TransactionRepository,
+	blockRepo out.BlockRepository,
+	authorityRepo out.AuthorityRepository,
 	transactor out.Transactor,
 	gameEngine out.GameEngine,
 ) *LedgerService {
 	return &LedgerService{
-		playerRepo: playerRepo,
-		txRepo:     txRepo,
-		transactor: transactor,
-		gameEngine: gameEngine,
+		playerRepo:    playerRepo,
+		txRepo:        txRepo,
+		blockRepo:     blockRepo,
+		authorityRepo: authorityRepo,
+		transactor:    transactor,
+		gameEngine:    gameEngine,
 	}
 }
 
@@ -203,4 +213,50 @@ func (s *LedgerService) SubmitTransaction(ctx context.Context, req in.SubmitTran
 		TxHash:     txHash,
 		NewBalance: newBalance,
 	}, nil
+}
+
+// ValidateChain walks every sealed block and verifies hash linkage and Merkle roots.
+func (s *LedgerService) ValidateChain(ctx context.Context) error {
+	blocks, err := s.blockRepo.AllBlocks(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load blocks: %w", err)
+	}
+	if len(blocks) == 0 {
+		return nil // nothing to validate yet
+	}
+
+	txsByBlock := make(map[uint64][]string, len(blocks))
+	for _, b := range blocks {
+		hashes, err := s.blockRepo.TransactionHashesByBlock(ctx, b.Height)
+		if err != nil {
+			return fmt.Errorf("failed to load tx hashes for block %d: %w", b.Height, err)
+		}
+		txsByBlock[b.Height] = hashes
+	}
+
+	return chain.ValidateChain(blocks, txsByBlock)
+}
+
+// RegisterAuthority validates the self-signed proof-of-ownership and persists the new authority.
+func (s *LedgerService) RegisterAuthority(ctx context.Context, req in.RegisterAuthorityRequest) (in.RegisterAuthorityResult, error) {
+	pubKey := ed25519.PublicKey(req.PubKey)
+
+	// Verify the caller owns the private key: signature must be over the raw public key bytes.
+	if !ed25519.Verify(pubKey, req.PubKey, req.Signature) {
+		return in.RegisterAuthorityResult{Success: false, ErrorMessage: "invalid self-signature"}, nil
+	}
+
+	authorityID := crypto.PubKeyToPlayerID(pubKey)
+	record := &types.AuthorityRecord{
+		ID:           authorityID,
+		PubKeyHex:    hex.EncodeToString(req.PubKey),
+		RegisteredAt: time.Now().Unix(),
+	}
+
+	if err := s.authorityRepo.Register(ctx, record); err != nil {
+		return in.RegisterAuthorityResult{Success: false, ErrorMessage: "failed to register authority"}, err
+	}
+
+	logger.Infof("Authority registered: id=%s", authorityID)
+	return in.RegisterAuthorityResult{Success: true, AuthorityID: authorityID}, nil
 }

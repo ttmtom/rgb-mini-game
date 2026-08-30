@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"os"
@@ -13,9 +14,11 @@ import (
 	grpcledger "rgb-game/internal/adapter/driving/grpc/ledger"
 	"rgb-game/internal/app/service"
 	"rgb-game/internal/domain/engine"
+	"rgb-game/internal/domain/types"
 	"rgb-game/pkg/logger"
 	"rgb-game/pkg/pb"
 	"syscall"
+	"time"
 
 	"google.golang.org/grpc"
 )
@@ -47,21 +50,33 @@ func main() {
 	db := pg.DB()
 
 	// ── Driven adapters (repositories + transactor) ──────────────────────
-	playerRepo := repositories.NewPlayerRepository(db)
-	txRepo := repositories.NewTransactionRepository(db)
-	blockRepo := repositories.NewBlockRepository(db)
-	transactor := repositories.NewTransactor(db)
+	playerRepo    := repositories.NewPlayerRepository(db)
+	txRepo        := repositories.NewTransactionRepository(db)
+	blockRepo     := repositories.NewBlockRepository(db)
+	authorityRepo := repositories.NewAuthorityRepository(db)
+	transactor    := repositories.NewTransactor(db)
+
+	// ── Seed genesis authority into the registry ─────────────────────────
+	genesisRecord := &types.AuthorityRecord{
+		ID:           auth.PlayerID(),
+		PubKeyHex:    hex.EncodeToString(auth.PubKey()),
+		RegisteredAt: time.Now().Unix(),
+	}
+	if err := authorityRepo.Register(context.Background(), genesisRecord); err != nil {
+		logger.Fatalf("failed to seed genesis authority: %v", err)
+	}
+	logger.Infof("Genesis authority seeded: %s", auth.PlayerID())
 
 	// ── Domain engine ────────────────────────────────────────────────────
 	ge := engine.New()
 
 	// ── Application services ─────────────────────────────────────────────
-	ledgerSvc := service.NewLedgerService(playerRepo, txRepo, transactor, ge)
-	blockSealer := service.NewBlockSealer(blockRepo, transactor, sealerCfg.Interval())
+	ledgerSvc := service.NewLedgerService(playerRepo, txRepo, blockRepo, authorityRepo, transactor, ge)
+	blockSealer := service.NewBlockSealer(blockRepo, transactor, sealerCfg.Interval(), sealerCfg.Difficulty)
 
 	// ── Driving adapter (gRPC handler) ───────────────────────────────────
 	grpcServer := grpc.NewServer()
-	pb.RegisterLedgerServiceServer(grpcServer, grpcledger.New(ledgerSvc, auth))
+	pb.RegisterLedgerServiceServer(grpcServer, grpcledger.New(ledgerSvc, authorityRepo))
 
 	// ── Listen ──────────────────────────────────────────────────────────
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.ServerConfig.Port))
@@ -75,6 +90,12 @@ func main() {
 
 	go blockSealer.Start(ctx)
 
+	// Validate chain integrity on startup.
+	if err := ledgerSvc.ValidateChain(context.Background()); err != nil {
+		logger.Warnf("Chain integrity check FAILED: %v", err)
+	} else {
+		logger.Info("Chain integrity check passed")
+	}
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
 			logger.Fatalf("failed to serve: %v", err)

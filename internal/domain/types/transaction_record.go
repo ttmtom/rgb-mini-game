@@ -5,12 +5,12 @@ package types
 // for mapping this to its own storage model.
 type TransactionRecord struct {
 	Hash       string
-	Type       uint8 // 0=TRANSFER, 1=MINT
 	SenderID   string
 	ReceiverID string
+	Nonce      uint64
+	Timestamp  int64
 	Red        uint32
 	Green      uint32
 	Blue       uint32
-	Nonce      uint64
-	Timestamp  int64
+	Type       uint8 // 0=TRANSFER, 1=MINT
 }

@@ -19,14 +19,16 @@ type BlockSealer struct {
 	blockRepo  out.BlockRepository
 	transactor out.Transactor
 	interval   time.Duration
+	difficulty uint8 // PoW: number of leading zero hex nibbles required
 }
 
 // NewBlockSealer creates a BlockSealer with the given dependencies.
-func NewBlockSealer(blockRepo out.BlockRepository, transactor out.Transactor, interval time.Duration) *BlockSealer {
+func NewBlockSealer(blockRepo out.BlockRepository, transactor out.Transactor, interval time.Duration, difficulty uint8) *BlockSealer {
 	return &BlockSealer{
 		blockRepo:  blockRepo,
 		transactor: transactor,
 		interval:   interval,
+		difficulty: difficulty,
 	}
 }
 
@@ -71,13 +73,14 @@ func (s *BlockSealer) ensureGenesis(ctx context.Context) error {
 		PrevHash:   types.GenesisBlockPrevHash,
 		MerkleRoot: emptyMerkle,
 		Timestamp:  now,
+		Difficulty: s.difficulty,
 	}
-	genesis.Hash = computeBlockHash(genesis)
+	mineBlock(genesis)
 
 	if err := s.blockRepo.CreateBlock(ctx, genesis); err != nil {
 		return fmt.Errorf("create genesis block: %w", err)
 	}
-	logger.Infof("BlockSealer: genesis block created (hash=%s)", genesis.Hash)
+	logger.Infof("BlockSealer: genesis block created (hash=%s, nonce=%d)", genesis.Hash, genesis.Nonce)
 	return nil
 }
 
@@ -109,8 +112,9 @@ func (s *BlockSealer) seal(ctx context.Context) error {
 			PrevHash:   latest.Hash,
 			MerkleRoot: merkle.BuildMerkleRoot(txHashes),
 			Timestamp:  time.Now().Unix(),
+			Difficulty: s.difficulty,
 		}
-		newBlock.Hash = computeBlockHash(newBlock)
+		mineBlock(newBlock)
 
 		if err := s.blockRepo.CreateBlock(txCtx, newBlock); err != nil {
 			return fmt.Errorf("create block %d: %w", newBlock.Height, err)
@@ -122,13 +126,13 @@ func (s *BlockSealer) seal(ctx context.Context) error {
 			}
 		}
 
-		logger.Infof("BlockSealer: sealed block %d (txs=%d, hash=%s)", newBlock.Height, len(txHashes), newBlock.Hash)
+		logger.Infof("BlockSealer: sealed block %d (txs=%d, nonce=%d, hash=%s)", newBlock.Height, len(txHashes), newBlock.Nonce, newBlock.Hash)
 		return nil
 	})
 }
 
-// computeBlockHash returns sha256(height_bytes + prev_hash + merkle_root + timestamp_bytes)
-// as a lower-case hex string.
+// computeBlockHash returns sha256(height + prevHash + merkleRoot + timestamp + nonce)
+// as a lower-case hex string. Nonce is included so miners can vary it for PoW.
 func computeBlockHash(b *types.Block) string {
 	h := sha256.New()
 
@@ -142,5 +146,28 @@ func computeBlockHash(b *types.Block) string {
 	binary.BigEndian.PutUint64(tsBytes, uint64(b.Timestamp))
 	h.Write(tsBytes)
 
+	nonceBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(nonceBytes, b.Nonce)
+	h.Write(nonceBytes)
+
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+// mineBlock increments b.Nonce until b.Hash starts with b.Difficulty leading
+// zero hex nibbles ('0' characters), satisfying the PoW requirement.
+// It sets b.Hash to the valid hash before returning.
+func mineBlock(b *types.Block) {
+	prefix := make([]byte, b.Difficulty)
+	for i := range prefix {
+		prefix[i] = '0'
+	}
+	target := string(prefix)
+
+	for {
+		b.Hash = computeBlockHash(b)
+		if len(b.Hash) >= int(b.Difficulty) && b.Hash[:b.Difficulty] == target {
+			return
+		}
+		b.Nonce++
+	}
 }

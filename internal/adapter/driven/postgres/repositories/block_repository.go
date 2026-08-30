@@ -14,6 +14,8 @@ type blockModel struct {
 	PrevHash   string `gorm:"not null;type:varchar(64)"`
 	MerkleRoot string `gorm:"not null;type:varchar(64)"`
 	Timestamp  int64  `gorm:"not null"`
+	Nonce      uint64 `gorm:"not null;default:0"`
+	Difficulty uint8  `gorm:"not null;default:0"`
 }
 
 func (blockModel) TableName() string { return "blocks" }
@@ -25,6 +27,8 @@ func toBlockRecord(m *blockModel) *types.Block {
 		PrevHash:   m.PrevHash,
 		MerkleRoot: m.MerkleRoot,
 		Timestamp:  m.Timestamp,
+		Nonce:      m.Nonce,
+		Difficulty: m.Difficulty,
 	}
 }
 
@@ -35,6 +39,8 @@ func fromBlockRecord(b *types.Block) *blockModel {
 		PrevHash:   b.PrevHash,
 		MerkleRoot: b.MerkleRoot,
 		Timestamp:  b.Timestamp,
+		Nonce:      b.Nonce,
+		Difficulty: b.Difficulty,
 	}
 }
 
@@ -99,4 +105,33 @@ func (r *BlockRepository) PendingTransactions(ctx context.Context) ([]*types.Tra
 		}
 	}
 	return records, nil
+}
+
+// AllBlocks returns all blocks ordered by ascending height.
+func (r *BlockRepository) AllBlocks(ctx context.Context) ([]*types.Block, error) {
+	db := dbFromContext(ctx, r.db)
+	var models []blockModel
+	if err := db.Order("height ASC").Find(&models).Error; err != nil {
+		return nil, err
+	}
+	blocks := make([]*types.Block, len(models))
+	for i, m := range models {
+		blocks[i] = toBlockRecord(&m)
+	}
+	return blocks, nil
+}
+
+// TransactionHashesByBlock returns the hashes of all transactions sealed in
+// the given block (identified by height).
+func (r *BlockRepository) TransactionHashesByBlock(ctx context.Context, blockHeight uint64) ([]string, error) {
+	db := dbFromContext(ctx, r.db)
+	var models []transactionModel
+	if err := db.Select("hash").Where("block_height = ?", blockHeight).Find(&models).Error; err != nil {
+		return nil, err
+	}
+	hashes := make([]string, len(models))
+	for i, m := range models {
+		hashes[i] = m.Hash
+	}
+	return hashes, nil
 }

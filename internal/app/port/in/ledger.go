@@ -17,13 +17,13 @@ const (
 // Signature verification and authority checks are the responsibility of the
 // driving adapter (gRPC handler) before calling the use case.
 type SubmitTransactionRequest struct {
-	TxType      TxType
 	SenderID    string
 	ReceiverID  string
+	Nonce       uint64
 	AmountRed   uint32
 	AmountGreen uint32
 	AmountBlue  uint32
-	Nonce       uint64
+	TxType      TxType
 }
 
 // SubmitTransactionResult is returned after a successful (or failed) submission.
@@ -36,6 +36,19 @@ type SubmitTransactionResult struct {
 	NewBalance *types.PlayerRecord
 }
 
+// RegisterAuthorityRequest carries the data for registering a new minting authority.
+type RegisterAuthorityRequest struct {
+	PubKey    []byte // raw ed25519 public key
+	Signature []byte // signature of PubKey bytes proving key ownership
+}
+
+// RegisterAuthorityResult is returned after a RegisterAuthority call.
+type RegisterAuthorityResult struct {
+	Success      bool
+	ErrorMessage string
+	AuthorityID  string
+}
+
 // LedgerUseCase defines the application operations exposed by the Ledger service.
 type LedgerUseCase interface {
 	// GetBalance returns the player record (R/G/B + nonce), or nil if not found.
@@ -43,4 +56,12 @@ type LedgerUseCase interface {
 
 	// SubmitTransaction processes a pre-verified transaction and persists the result.
 	SubmitTransaction(ctx context.Context, req SubmitTransactionRequest) (SubmitTransactionResult, error)
+
+	// ValidateChain walks the full block chain and verifies every block's hash,
+	// PrevHash linkage, and Merkle root. Returns an error describing the first
+	// integrity violation found, or nil if the chain is intact.
+	ValidateChain(ctx context.Context) error
+
+	// RegisterAuthority adds a new minting authority after verifying the self-signed proof.
+	RegisterAuthority(ctx context.Context, req RegisterAuthorityRequest) (RegisterAuthorityResult, error)
 }

@@ -8,6 +8,10 @@ service LedgerService {
   rpc GetBalance (GetBalanceRequest) returns (BalanceResponse) {}
 
   rpc SubmitTransaction (SubmitTransactionRequest) returns (SubmitTransactionResponse) {}
+
+  // RegisterAuthority adds a new minting authority to the open authority set.
+  // The caller must prove ownership of the keypair by signing their own public key.
+  rpc RegisterAuthority (RegisterAuthorityRequest) returns (RegisterAuthorityResponse) {}
 }
 
 // =============================================================================
@@ -68,4 +72,20 @@ message SubmitTransactionResponse {
   string tx_hash = 3;
 
   BalanceResponse new_balance = 4;
+}
+
+// RegisterAuthorityRequest proves ownership of a keypair by signing the public key itself.
+message RegisterAuthorityRequest {
+  // The raw ed25519 public key of the authority to register.
+  bytes pub_key = 1;
+
+  // ed25519 signature of pub_key bytes — proves the caller holds the private key.
+  bytes signature = 2;
+}
+
+message RegisterAuthorityResponse {
+  bool success = 1;
+  string error_message = 2;
+  // The authority ID derived from the registered key: hex(sha256(pub_key)).
+  string authority_id = 3;
 }

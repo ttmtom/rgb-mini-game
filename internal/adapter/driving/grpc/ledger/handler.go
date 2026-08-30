@@ -1,7 +1,6 @@
 package grpcledger
 
 import (
-	"bytes"
 	"context"
 	"crypto/ed25519"
 	"rgb-game/internal/app/port/in"
@@ -17,14 +16,13 @@ import (
 // It translates pb ↔ domain types and delegates to LedgerUseCase.
 type Handler struct {
 	pb.UnimplementedLedgerServiceServer
-	useCase out.PublicAuthority // authority for MINT verification only
-	ledger  in.LedgerUseCase
-	auth    out.PublicAuthority
+	ledger        in.LedgerUseCase
+	authorityRepo out.AuthorityRepository
 }
 
 // New creates a new Ledger gRPC handler.
-func New(ledger in.LedgerUseCase, auth out.PublicAuthority) *Handler {
-	return &Handler{ledger: ledger, auth: auth}
+func New(ledger in.LedgerUseCase, authorityRepo out.AuthorityRepository) *Handler {
+	return &Handler{ledger: ledger, authorityRepo: authorityRepo}
 }
 
 // GetBalance implements pb.LedgerServiceServer.
@@ -82,11 +80,18 @@ func (h *Handler) SubmitTransaction(ctx context.Context, req *pb.SubmitTransacti
 		return &pb.SubmitTransactionResponse{Success: false, ErrorMessage: "sender public key does not match sender_id"}, nil
 	}
 
-	// 4. For MINT: only the authority key is allowed.
+	// 4. For MINT: verify sender is a registered authority.
 	isMint := payload.GetType() == pb.TransactionPayload_MINT
-	if isMint && !bytes.Equal(pubKey, h.auth.PubKey()) {
-		logger.Warnf("Unauthorized MINT attempt from %s", payload.GetSenderId())
-		return &pb.SubmitTransactionResponse{Success: false, ErrorMessage: "only authority can mint"}, nil
+	if isMint {
+		isAuth, err := h.authorityRepo.Exists(ctx, pubKey)
+		if err != nil {
+			logger.Errorf("Authority lookup failed: %v", err)
+			return &pb.SubmitTransactionResponse{Success: false, ErrorMessage: "authority lookup failed"}, nil
+		}
+		if !isAuth {
+			logger.Warnf("Unauthorized MINT attempt from %s", payload.GetSenderId())
+			return &pb.SubmitTransactionResponse{Success: false, ErrorMessage: "sender is not a registered authority"}, nil
+		}
 	}
 
 	txType := in.TxTypeTransfer
@@ -124,4 +129,25 @@ func (h *Handler) SubmitTransaction(ctx context.Context, req *pb.SubmitTransacti
 		}
 	}
 	return resp, nil
+}
+
+// RegisterAuthority implements pb.LedgerServiceServer.
+// The caller must prove key ownership by signing their own public key bytes.
+func (h *Handler) RegisterAuthority(ctx context.Context, req *pb.RegisterAuthorityRequest) (*pb.RegisterAuthorityResponse, error) {
+	logger.Infof("RegisterAuthority from pub key %x", req.GetPubKey())
+
+	domainReq := in.RegisterAuthorityRequest{
+		PubKey:    req.GetPubKey(),
+		Signature: req.GetSignature(),
+	}
+
+	result, err := h.ledger.RegisterAuthority(ctx, domainReq)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.RegisterAuthorityResponse{
+		Success:      result.Success,
+		ErrorMessage: result.ErrorMessage,
+		AuthorityId:  result.AuthorityID,
+	}, nil
 }
