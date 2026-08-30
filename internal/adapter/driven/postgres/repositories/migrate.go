@@ -12,5 +12,6 @@ func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&playerModel{},
 		&transactionModel{},
+		&blockModel{},
 	)
 }

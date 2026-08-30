@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -28,6 +29,7 @@ func main() {
 	if err != nil {
 		logger.Fatalf("failed to initialize config: %v", err)
 	}
+	sealerCfg := config.InitBlockSealerConfig()
 
 	// ── Authority public key ────────────────────────────────────────────
 	auth, err := authority.Load(cfg.AuthorityConfig)
@@ -47,13 +49,15 @@ func main() {
 	// ── Driven adapters (repositories + transactor) ──────────────────────
 	playerRepo := repositories.NewPlayerRepository(db)
 	txRepo := repositories.NewTransactionRepository(db)
+	blockRepo := repositories.NewBlockRepository(db)
 	transactor := repositories.NewTransactor(db)
 
 	// ── Domain engine ────────────────────────────────────────────────────
 	ge := engine.New()
 
-	// ── Application service ──────────────────────────────────────────────
+	// ── Application services ─────────────────────────────────────────────
 	ledgerSvc := service.NewLedgerService(playerRepo, txRepo, transactor, ge)
+	blockSealer := service.NewBlockSealer(blockRepo, transactor, sealerCfg.Interval())
 
 	// ── Driving adapter (gRPC handler) ───────────────────────────────────
 	grpcServer := grpc.NewServer()
@@ -66,6 +70,11 @@ func main() {
 	}
 	logger.Infof("Ledger gRPC server listening on %v", lis.Addr())
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go blockSealer.Start(ctx)
+
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
 			logger.Fatalf("failed to serve: %v", err)
@@ -76,6 +85,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit
 	logger.Infof("Received %s, shutting down gracefully…", sig)
+	cancel()
 	grpcServer.GracefulStop()
 	logger.Info("Ledger server stopped")
 }

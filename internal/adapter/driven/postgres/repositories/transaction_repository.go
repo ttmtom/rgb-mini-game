@@ -10,15 +10,16 @@ import (
 // transactionModel is the GORM persistence model for a ledger transaction.
 // Intentionally private; callers work with domain types.TransactionRecord.
 type transactionModel struct {
-	Hash       string `gorm:"primaryKey;type:varchar(64)"`
-	Type       uint8  `gorm:"not null"` // 0=TRANSFER, 1=MINT
-	SenderID   string `gorm:"not null;type:varchar(64);index"`
-	ReceiverID string `gorm:"not null;type:varchar(64);index"`
-	Red        uint32 `gorm:"not null;default:0"`
-	Green      uint32 `gorm:"not null;default:0"`
-	Blue       uint32 `gorm:"not null;default:0"`
-	Nonce      uint64 `gorm:"not null"`
-	Timestamp  int64  `gorm:"not null"`
+	Hash        string  `gorm:"primaryKey;type:varchar(64)"`
+	Type        uint8   `gorm:"not null"` // 0=TRANSFER, 1=MINT
+	SenderID    string  `gorm:"not null;type:varchar(64);index"`
+	ReceiverID  string  `gorm:"not null;type:varchar(64);index"`
+	Red         uint32  `gorm:"not null;default:0"`
+	Green       uint32  `gorm:"not null;default:0"`
+	Blue        uint32  `gorm:"not null;default:0"`
+	Nonce       uint64  `gorm:"not null"`
+	Timestamp   int64   `gorm:"not null"`
+	BlockHeight *uint64 `gorm:"index"` // NULL until sealed into a block
 }
 
 func (transactionModel) TableName() string { return "transactions" }

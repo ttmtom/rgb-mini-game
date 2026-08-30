@@ -19,6 +19,14 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// playerAlias returns the alias passed as the first CLI argument, or "" if none.
+func playerAlias() string {
+	if len(os.Args) > 1 {
+		return strings.TrimSpace(os.Args[1])
+	}
+	return ""
+}
+
 func main() {
 	logger.Init()
 
@@ -29,13 +37,22 @@ func main() {
 	}
 	pc := cfg.PlayerConfig
 
+	// Override key path when an alias is provided as the first CLI argument.
+	alias := playerAlias()
+	if alias != "" {
+		pc.PlayerKeyPath = fmt.Sprintf(".key/player_%s_ed25519", alias)
+	}
+
 	// ── Player keypair ──────────────────────────────────────────────────
 	keypair, err := crypto.LoadOrGenerateKey(pc.PlayerKeyPath)
 	if err != nil {
 		logger.Fatalf("failed to load/generate player keypair: %v", err)
 	}
 	playerID := crypto.PubKeyToPlayerID(keypair.PublicKey)
-	fmt.Printf("Player ID: %s\n", playerID)
+	if alias != "" {
+		fmt.Printf("Player Alias : %s\n", alias)
+	}
+	fmt.Printf("Player ID    : %s\n", playerID)
 
 	// ── gRPC connections ────────────────────────────────────────────────
 	ledgerConn, err := grpc.NewClient(pc.LedgerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
