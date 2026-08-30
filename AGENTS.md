@@ -8,7 +8,8 @@ The codebase follows **Hexagonal Architecture** (Ports & Adapters):
 ```
         ┌─────────────────────────────────────┐
         │            Domain Ring               │
-        │  internal/domain/{types,enum,engine} │
+        │  internal/domain/{types,enum,engine, │
+        │                   chain,merkle}      │
         └───────────────┬─────────────────────┘
                         │ used by
         ┌───────────────▼─────────────────────┐
@@ -37,6 +38,8 @@ The codebase follows **Hexagonal Architecture** (Ports & Adapters):
 
 Player and Game Server both call Ledger gRPC. Game Server issues MINT txs; players issue TRANSFER txs. Ledger persists everything in Postgres via GORM.
 
+The Ledger also runs a **BlockSealer** background goroutine that periodically mines pending transactions into blocks, and validates the full chain on startup.
+
 ---
 
 ## Directory Layout
@@ -45,19 +48,24 @@ Player and Game Server both call Ledger gRPC. Game Server issues MINT txs; playe
 internal/
   domain/                        # Pure domain ring — no external imports
     types/                       # PlayerRecord, PlayerState, TransactionRecord,
-    │                            # MissionRecord, Mission, RGB
+    │                            # MissionRecord, Mission, RGB, Block, AuthorityRecord
     enum/color.go                # Color (Red=0, Green=1, Blue=2)
     engine/engine.go             # GameEngine domain logic (clamped calc, PlayerTransactions, PlayerCompleteMission)
+    chain/validator.go           # ValidateChain — checks hash linkage, PrevHash, Merkle root, PoW per block
+    merkle/merkle.go             # BuildMerkleRoot — deterministic Merkle root over tx hashes
 
   app/                           # Application ring
     port/
       in/                        # Primary/driving ports (use-case contracts)
-        ledger.go                # LedgerUseCase, SubmitTransactionRequest/Result, TxType
+        ledger.go                # LedgerUseCase: GetBalance, SubmitTransaction, ValidateChain, RegisterAuthority
         game.go                  # GameUseCase, RequestMissionResult, CompleteMissionResult
       out/                       # Secondary/driven ports (infrastructure contracts)
         transactor.go            # Transactor — InTransaction(ctx, fn)
         repositories.go          # PlayerRepository, TransactionRepository (ctx-based, no *gorm.DB)
         mission_repository.go    # MissionRepository
+        block_repository.go      # BlockRepository — LatestBlock, CreateBlock, SealTransactions,
+        │                        # PendingTransactions, AllBlocks, TransactionHashesByBlock
+        authority_repository.go  # AuthorityRepository — Register, Exists
         authority.go             # PublicAuthority, FullAuthority
         engine.go                # GameEngine interface
         ledger_client.go         # LedgerClient — GetAuthorityNonce, SubmitMint
@@ -65,19 +73,24 @@ internal/
       ledger.go                  # LedgerService — implements port/in.LedgerUseCase
       game.go                    # GameService   — implements port/in.GameUseCase
       mission.go                 # missionService (unexported, used only by GameService)
+      block_sealer.go            # BlockSealer — background PoW miner + block sealing loop
 
   adapter/
     driving/                     # Left-side adapters: receive transport calls, invoke use cases
       grpc/
-        ledger/handler.go        # pb.LedgerServiceServer; owns ALL crypto verification
+        ledger/handler.go        # pb.LedgerServiceServer; owns ALL crypto verification;
+        │                        # MINT check uses AuthorityRepository.Exists (open authority set)
         game/handler.go          # pb.GameServiceServer; translates pb ↔ domain types
     driven/                      # Right-side adapters: implement out/ ports
       postgres/
         postgres.go              # gorm.Open wrapper
         repositories/
-          player_repository.go   # out.PlayerRepository via GORM
-          transaction_repository.go # out.TransactionRepository via GORM
-          transactor.go          # out.Transactor via gorm.DB.Transaction + context key
+          player_repository.go        # out.PlayerRepository via GORM
+          transaction_repository.go   # out.TransactionRepository via GORM
+          block_repository.go         # out.BlockRepository via GORM (blocks + pending/sealed txs)
+          authority_repository.go     # out.AuthorityRepository via GORM (authorities table)
+          transactor.go               # out.Transactor via gorm.DB.Transaction + context key
+          migrate.go                  # AutoMigrate — players, transactions, blocks, authorities
       redis/
         redis.go                 # Redis client init
         mission_repository.go    # out.MissionRepository via Redis TTL keys
@@ -112,6 +125,8 @@ Game Server env vars: `GAME_SERVER_GRPC_PORT` (default `50052`), `LEDGER_ADDR` (
 
 Player CLI env vars: `PLAYER_KEY_PATH` (default `.key/player_ed25519`), `LEDGER_ADDR` (default `localhost:50051`), `SERVER_ADDR` (default `localhost:50052`). The CLI generates a keypair at `PLAYER_KEY_PATH` on first run.
 
+Block Sealer env vars: `BLOCK_INTERVAL_SECONDS` (default `10`), `BLOCK_DIFFICULTY` (default `2` — number of leading zero hex nibbles required in each block hash for PoW).
+
 ---
 
 ## Hexagonal Architecture Rules
@@ -130,8 +145,9 @@ Player CLI env vars: `PLAYER_KEY_PATH` (default `.key/player_ed25519`), `LEDGER_
 - Keypair stored as JSON with hex-encoded keys; use `pkg/crypto.LoadOrGenerateKey(path)`
 - `make keygen` writes two files: `.key/id_ed25519` (JSON keypair) and `.key/id_ed25519.pub.hex` (bare hex pubkey for use in `AUTHORITY_PUB_KEY`)
 - Transaction wire format: marshal `pb.TransactionPayload` → sign bytes → send `{raw_payload, signature, sender_pub_key}` in `SubmitTransactionRequest`
-- **Crypto verification lives in the Ledger gRPC driving adapter** (`adapter/driving/grpc/ledger/handler.go`): verify signature, verify `sha256(sender_pub_key) == payload.sender_id`, verify MINT authority. The `LedgerService` application service receives only pre-verified, typed `in.SubmitTransactionRequest` values.
-- MINT txs: Game Server authority check is also performed in the driving adapter before the use case is called.
+- **Crypto verification lives in the Ledger gRPC driving adapter** (`adapter/driving/grpc/ledger/handler.go`): verify signature, verify `sha256(sender_pub_key) == payload.sender_id`, check MINT authority.
+- MINT authority check: `authorityRepo.Exists(pubKey)` — any key registered via `RegisterAuthority` is allowed (open authority set). On Ledger startup the genesis key from config is always seeded into the `authorities` table.
+- **`RegisterAuthority` RPC** — a new node proves ownership of its keypair by signing its own public key bytes (self-signed proof). The Ledger stores the key in the `authorities` table; from that point it can issue MINT transactions.
 
 ---
 
@@ -140,6 +156,8 @@ Player CLI env vars: `PLAYER_KEY_PATH` (default `.key/player_ed25519`), `LEDGER_
 - `domain/types.RGB{R, G, B int8}` — **signed delta** used in mission rewards and engine logic
 - `domain/types.PlayerRecord{Red, Green, Blue uint32}` — **unsigned storage** in core domain / Postgres
 - `domain/types.PlayerState{R, G, B uint8, Nonce uint64}` — engine working state
+- `domain/types.Block{Height, Hash, PrevHash, MerkleRoot, Timestamp, Nonce, Difficulty}` — a sealed block; `Nonce` is the PoW nonce, `Difficulty` is the number of leading zero hex nibbles required
+- `domain/types.AuthorityRecord{ID, PubKeyHex, RegisteredAt}` — a registered MINT authority
 - `domain/engine.Engine.calculation(color uint8, val int8)` is unexported; clamps result to `[0, 255]`
 - `app/port/in.TxType`: `TxTypeTransfer = 0`, `TxTypeMint = 1` — mirrors `pb.TransactionPayload_TxType`
 - `domain/enum.Color{Red=0, Green=1, Blue=2}` — matches `pb.RewardColor` ordinals in `game.proto`
@@ -165,6 +183,10 @@ Available repository write methods (all accept `context.Context`):
 - `repos.Player.FindOrCreate(ctx, playerID) (*types.PlayerRecord, error)` — upserts and locks (must be inside tx)
 - `repos.Player.UpdateBalance(ctx, *types.PlayerRecord) error` — saves updated R/G/B/Nonce
 - `repos.Transaction.Create(ctx, *types.TransactionRecord) error` — inserts a new tx record
+- `repos.Block.AllBlocks(ctx) ([]*types.Block, error)` — all blocks ordered by ascending height
+- `repos.Block.TransactionHashesByBlock(ctx, height) ([]string, error)` — tx hashes sealed in a block
+- `repos.Authority.Register(ctx, *types.AuthorityRecord) error` — idempotent upsert
+- `repos.Authority.Exists(ctx, pubKey []byte) (bool, error)` — MINT authority check
 
 ---
 
@@ -177,11 +199,17 @@ Available repository write methods (all accept `context.Context`):
 drivenpostgres.Init → db
 repositories.NewPlayerRepository(db)
 repositories.NewTransactionRepository(db)
-repositories.NewTransactor(db)        ← Transactor port
-engine.New()                          ← domain engine
-service.NewLedgerService(...)         ← application service
-grpcledger.New(ledgerSvc, auth)       ← driving adapter
+repositories.NewBlockRepository(db)
+repositories.NewAuthorityRepository(db)
+repositories.NewTransactor(db)              ← Transactor port
+authorityRepo.Register(genesisRecord)       ← seed genesis authority on boot
+engine.New()                                ← domain engine
+service.NewLedgerService(...)               ← application service
+service.NewBlockSealer(blockRepo, transactor, interval, difficulty)
+grpcledger.New(ledgerSvc, authorityRepo)    ← driving adapter (open MINT check)
 pb.RegisterLedgerServiceServer(grpcServer, handler)
+ledgerSvc.ValidateChain(ctx)                ← chain integrity check on startup
+go blockSealer.Start(ctx)                   ← PoW mining loop
 ```
 
 **Game Server** (`cmd/server/main.go`):
@@ -232,9 +260,14 @@ Game Server stores mission state in Redis via `adapter/driven/redis.MissionRepos
 - Proto sources: `api/proto/v1/ledger.proto`, `api/proto/v1/game.proto`
 - `game.proto` imports `ledger.proto` (shares `BalanceResponse`)
 - Both use `option go_package = "./pkg/pb"` → all generated types land in `pkg/pb`
-- Regenerate after any `.proto` change: `make proto-v1`
-- `LedgerService` RPCs: `GetBalance`, `SubmitTransaction`; `SubmitTransactionResponse` returns `new_balance BalanceResponse`
+- Regenerate after any `.proto` change: `PATH="$PATH:$(go env GOPATH)/bin" make proto-v1`
+- `LedgerService` RPCs: `GetBalance`, `SubmitTransaction`, `RegisterAuthority`; `SubmitTransactionResponse` returns `new_balance BalanceResponse`
 - `GameService` RPCs: `RequestMission(player_id) → MissionResponse` and `CompleteMission(mission_id, player_id) → CompleteMissionResponse`
+
+> **Note:** `protoc-gen-go` and `protoc-gen-go-grpc` must be on `PATH`. Install with:
+> `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest`
+> `go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest`
+> `protoc` itself can be installed with `brew install protobuf` on macOS.
 
 ---
 
@@ -245,6 +278,50 @@ Game Server stores mission state in Redis via `adapter/driven/redis.MissionRepos
 - Env vars via `utils.GetEnv("KEY", "optional_default")` — no direct `os.Getenv`
 - New config structs belong in `config/` following the pattern in `config/server.go`
 - **`POSTGRES_URL` is ignored by `postgres.Init`** — it always reconstructs the DSN from individual `POSTGRES_USER/PASSWORD/HOST/PORT/NAME/SSL_MODE` vars
+
+---
+
+## Blockchain Features
+
+### Chain Structure
+
+Each `types.Block` links to the previous via `PrevHash`, commits transactions via a Merkle root, and requires a PoW nonce:
+
+```
+Block {
+    Height     uint64   // sequential, starts at 0 (genesis)
+    Hash       string   // sha256(height + prevHash + merkleRoot + timestamp + nonce)
+    PrevHash   string   // hash of block Height-1; genesis uses 64 zero hex chars
+    MerkleRoot string   // merkle.BuildMerkleRoot(sorted tx hashes)
+    Timestamp  int64
+    Nonce      uint64   // PoW nonce — incremented until hash satisfies difficulty
+    Difficulty uint8    // leading zero hex nibbles required in hash
+}
+```
+
+### Proof-of-Work
+
+`service.BlockSealer` calls `mineBlock(b)` which increments `b.Nonce` until `b.Hash` starts with `b.Difficulty` `'0'` characters.
+Default difficulty is `2` (e.g. hash starts with `00…`). Raise `BLOCK_DIFFICULTY` to slow mining.
+
+### Chain Integrity Validation
+
+`domain/chain.ValidateChain(blocks, txsByBlock)` is a pure function (no I/O) that checks:
+1. Each block's stored hash matches recomputed `sha256(…)`
+2. Each block's `PrevHash` matches the previous block's `Hash`
+3. Each block's `MerkleRoot` matches `merkle.BuildMerkleRoot(txHashes)`
+4. Each block's hash satisfies its `Difficulty` PoW target
+
+`LedgerService.ValidateChain(ctx)` loads all blocks + tx hashes from Postgres and delegates to the domain function.
+Called automatically on Ledger startup; also available as a use-case for future RPC exposure.
+
+### Authority Registry
+
+MINT transactions are now open to any registered authority (not a single hardcoded key).
+- **Table:** `authorities` — `(id, pub_key_hex, registered_at)`
+- **Register:** call `RegisterAuthority` RPC with `(pub_key, signature_of_pub_key)` — the Ledger verifies the self-signed proof and inserts the record
+- **Check on MINT:** `authorityRepo.Exists(pubKey)` in the gRPC driving adapter
+- **Genesis seed:** the key from `AUTHORITY_PUB_KEY_PATH`/`AUTHORITY_PUB_KEY` config is automatically inserted on Ledger startup
 
 ---
 
