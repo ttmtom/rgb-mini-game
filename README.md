@@ -1,8 +1,16 @@
 # RGB Mini-Game
 
-A distributed blockchain mini-game built with Go, gRPC, PostgreSQL and Redis.  
-Players complete missions to earn RGB tokens, then freely transfer them between each other. All token state is persisted
-on a tamper-resistant ledger backed by Postgres.
+An RGB token mini-game built with Go, gRPC, PostgreSQL and Redis that implements real blockchain data structures
+on a single authoritative Ledger node.
+
+Players complete missions to earn RGB tokens, then freely transfer them between each other. Every transaction is
+cryptographically signed (ed25519), batched into blocks via Proof-of-Work mining, linked by hash into an immutable
+chain, and committed to Postgres — forming a tamper-resistant ledger.
+
+> **Scope note:** The three-binary system (Ledger + Game Server + Player CLI) is distributed in the *microservice*
+> sense — the binaries communicate over gRPC. The blockchain itself, however, runs on a **single Ledger node** with
+> no peer-to-peer network, no multi-node consensus, and no block propagation. Think of it as a fully-correct
+> single-node blockchain with real PoW, Merkle trees, and chain validation.
 
 The codebase follows **Hexagonal Architecture** (Ports & Adapters), keeping domain logic and application use cases
 completely independent of transport and infrastructure concerns.
@@ -77,6 +85,32 @@ Three independent binaries communicate over gRPC:
 | **Driving adapters** (`adapter/driving/`) | Own all transport concerns (proto, crypto) |
 | **Driven adapters** (`adapter/driven/`) | Implement out-ports; own all infra concerns |
 | **`cmd/`** | Wires all layers; no business logic |
+
+---
+
+## Blockchain Design
+
+### What is implemented
+
+| Feature | Detail |
+|---|---|
+| **Linked blocks** | Every block records `PrevHash` → genesis; tampering any block breaks all descendants |
+| **Proof-of-Work** | `BlockSealer` mines each block by incrementing `Nonce` until `sha256(block)` starts with `Difficulty` leading zero hex nibbles |
+| **Merkle tree** | `internal/domain/merkle` builds a sorted, binary-reduced SHA-256 Merkle root over all sealed transaction hashes |
+| **Chain validation** | `internal/domain/chain.ValidateChain()` re-derives every block hash, checks `PrevHash` linkage, recomputes Merkle roots, and verifies PoW difficulty — called on every Ledger startup |
+| **Cryptographic identities** | Player & authority IDs = `hex(sha256(ed25519_pubkey))`; every MINT and TRANSFER is signed by the sender |
+| **Signature verification** | The Ledger gRPC adapter verifies `sha256(sender_pub_key) == payload.sender_id` and the ed25519 signature before any application logic runs |
+| **Block sealer** | A background goroutine (`service.BlockSealer`) ticks on a configurable interval, gathers pending transactions, mines a new block, and seals them atomically inside a Postgres transaction |
+
+### What is NOT implemented (single-node scope)
+
+| Missing | Implication |
+|---|---|
+| **P2P network** | Only one Ledger process; no peer discovery or gossip protocol |
+| **Multi-node consensus** | No mechanism for multiple nodes to agree on the canonical chain |
+| **Block propagation** | Mined blocks stay in one Postgres instance; no broadcasting |
+| **Fork resolution** | No longest-chain rule; no finality mechanism |
+| **Decentralised authority** | A single genesis authority keypair controls all MINT operations |
 
 ---
 
@@ -242,7 +276,7 @@ a new one.
 ```sh
 make proto-v1        # regenerate pkg/pb/ from api/proto/v1/*.proto
 make keygen          # generate authority ed25519 keypair → .key/
-make migrate         # run GORM AutoMigrate (creates players + transactions tables)
+make migrate         # run GORM AutoMigrate (creates players, transactions, blocks, authority_records tables)
 make build-ledger    # compile → bin/ledger
 make build-server    # compile → bin/server
 make build-player    # compile → bin/player
@@ -266,11 +300,14 @@ internal/
     types/          PlayerRecord, PlayerState, TransactionRecord, MissionRecord, RGB
     enum/           Color (Red/Green/Blue)
     engine/         Game calculation logic (PlayerTransactions, PlayerCompleteMission)
+    merkle/         Merkle tree builder (BuildMerkleRoot)
+    chain/          Chain integrity validator (ValidateChain)
   app/              Application ring
     port/
       in/           Primary ports — LedgerUseCase, GameUseCase + request/result types
       out/          Secondary ports — Transactor, PlayerRepository, TransactionRepository,
-                    MissionRepository, GameEngine, PublicAuthority, FullAuthority, LedgerClient
+                    BlockRepository, AuthorityRepository, MissionRepository,
+                    GameEngine, PublicAuthority, FullAuthority, LedgerClient
     service/        LedgerService, GameService, missionService (no pb/gorm imports)
   adapter/
     driving/        Left-side (primary) adapters — receive gRPC, call use cases
@@ -279,6 +316,7 @@ internal/
         game/       pb.GameServiceServer
     driven/         Right-side (secondary) adapters — implement out/ ports
       postgres/     GormTransactor + PlayerRepository + TransactionRepository
+                    + BlockRepository + AuthorityRepository
       redis/        MissionRepository (TTL-based)
       authority/    PublicAuthority + FullAuthority + Load()
       ledger/       LedgerClient — wraps pb.LedgerServiceClient, handles signing
