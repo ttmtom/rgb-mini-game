@@ -1,91 +1,32 @@
 package main
 
 import (
-	"fmt"
-	"net"
-	"os"
-	"os/signal"
 	"rgb-game/config"
-	"rgb-game/internal/adapter/driven/authority"
-	drivenledger "rgb-game/internal/adapter/driven/ledger"
-	drivenredis "rgb-game/internal/adapter/driven/redis"
-	grpcgame "rgb-game/internal/adapter/driving/grpc/game"
-	"rgb-game/internal/app/service"
-	"rgb-game/pkg/crypto"
+	"rgb-game/pkg/grpcserver"
 	"rgb-game/pkg/logger"
-	"rgb-game/pkg/pb"
-	"syscall"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"context"
 )
 
 func main() {
 	logger.Init()
 
-	// ── Configuration ───────────────────────────────────────────────────
 	logger.Info("Initializing Game Server configuration")
 	cfg, err := config.InitGameServerFullConfig()
 	if err != nil {
 		logger.Fatalf("failed to initialize config: %v", err)
 	}
-	gsCfg := cfg.GameServerConfig
 
-	// ── Authority keypair ───────────────────────────────────────────────
-	keypair, err := crypto.LoadOrGenerateKey(gsCfg.AuthorityKeyPath)
+	s, cleanup, err := wire(cfg)
 	if err != nil {
-		logger.Fatalf("failed to load/generate authority keypair: %v", err)
+		logger.Fatalf("failed to wire dependencies: %v", err)
 	}
-	auth := authority.NewFullAuthority(keypair)
-	logger.Infof("Authority Player ID: %s", auth.PlayerID())
-	logger.Infof("Authority Public Key (hex): %x", auth.PubKey())
-	logger.Infof("Set AUTHORITY_PUB_KEY=%x in the Ledger .env if not using a shared key file", auth.PubKey())
+	defer cleanup()
 
-	// ── Redis ───────────────────────────────────────────────────────────
-	redisClient, err := drivenredis.Init(cfg.RedisConfig)
-	if err != nil {
-		logger.Fatalf("failed to connect to Redis: %v", err)
+	ctx := context.Background()
+	if err := grpcserver.Run(ctx, s, cfg.GameServerConfig.Port); err != nil {
+		logger.Fatalf("gRPC server error: %v", err)
 	}
-	defer redisClient.Close()
-
-	// ── Ledger gRPC client ──────────────────────────────────────────────
-	logger.Infof("Connecting to Ledger at %s", gsCfg.LedgerAddr)
-	ledgerConn, err := grpc.NewClient(gsCfg.LedgerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		logger.Fatalf("failed to connect to Ledger: %v", err)
-	}
-	defer ledgerConn.Close()
-
-	// ── Driven adapters ─────────────────────────────────────────────────
-	missionRepo := drivenredis.NewMissionRepository(redisClient)
-	ledgerClient := drivenledger.New(pb.NewLedgerServiceClient(ledgerConn))
-
-	// ── Application service ──────────────────────────────────────────────
-	gameSvc := service.NewGameService(missionRepo, auth, ledgerClient, service.GameServiceConfig{
-		MissionCooldown: cfg.GameConfig.Cooldown(),
-	})
-
-	// ── Driving adapter (gRPC handler) ───────────────────────────────────
-	grpcServer := grpc.NewServer()
-	pb.RegisterGameServiceServer(grpcServer, grpcgame.New(gameSvc))
-
-	// ── Listen ──────────────────────────────────────────────────────────
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", gsCfg.Port))
-	if err != nil {
-		logger.Fatalf("failed to listen: %v", err)
-	}
-	logger.Infof("Game Server gRPC listening on %v", lis.Addr())
-
-	go func() {
-		if err := grpcServer.Serve(lis); err != nil {
-			logger.Fatalf("failed to serve: %v", err)
-		}
-	}()
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	sig := <-quit
-	logger.Infof("Received %s, shutting down gracefully…", sig)
-	grpcServer.GracefulStop()
 	logger.Info("Game Server stopped")
 }
+
