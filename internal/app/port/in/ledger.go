@@ -37,9 +37,11 @@ type SubmitTransactionResult struct {
 }
 
 // RegisterAuthorityRequest carries the data for registering a new minting authority.
+// The driving adapter is responsible for verifying the self-signed proof before
+// constructing this request; AuthorityID must be pre-derived by the adapter.
 type RegisterAuthorityRequest struct {
-	PubKey    []byte // raw ed25519 public key
-	Signature []byte // signature of PubKey bytes proving key ownership
+	PubKey      []byte // raw ed25519 public key
+	AuthorityID string // hex(sha256(PubKey)), derived and verified by the driving adapter
 }
 
 // RegisterAuthorityResult is returned after a RegisterAuthority call.

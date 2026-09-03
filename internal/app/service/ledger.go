@@ -2,14 +2,12 @@ package service
 
 import (
 	"context"
-	"crypto/ed25519"
 	"encoding/hex"
 	"fmt"
 	"rgb-game/internal/app/port/in"
 	"rgb-game/internal/app/port/out"
 	"rgb-game/internal/domain/chain"
 	"rgb-game/internal/domain/types"
-	"rgb-game/pkg/crypto"
 	"rgb-game/pkg/logger"
 	"time"
 
@@ -237,18 +235,12 @@ func (s *LedgerService) ValidateChain(ctx context.Context) error {
 	return chain.ValidateChain(blocks, txsByBlock)
 }
 
-// RegisterAuthority validates the self-signed proof-of-ownership and persists the new authority.
+// RegisterAuthority persists a new minting authority.
+// Cryptographic verification (self-signed proof) must be performed by the driving
+// adapter before calling this method; AuthorityID must be pre-derived.
 func (s *LedgerService) RegisterAuthority(ctx context.Context, req in.RegisterAuthorityRequest) (in.RegisterAuthorityResult, error) {
-	pubKey := ed25519.PublicKey(req.PubKey)
-
-	// Verify the caller owns the private key: signature must be over the raw public key bytes.
-	if !ed25519.Verify(pubKey, req.PubKey, req.Signature) {
-		return in.RegisterAuthorityResult{Success: false, ErrorMessage: "invalid self-signature"}, nil
-	}
-
-	authorityID := crypto.PubKeyToPlayerID(pubKey)
 	record := &types.AuthorityRecord{
-		ID:           authorityID,
+		ID:           req.AuthorityID,
 		PubKeyHex:    hex.EncodeToString(req.PubKey),
 		RegisteredAt: time.Now().Unix(),
 	}
@@ -257,6 +249,6 @@ func (s *LedgerService) RegisterAuthority(ctx context.Context, req in.RegisterAu
 		return in.RegisterAuthorityResult{Success: false, ErrorMessage: "failed to register authority"}, err
 	}
 
-	logger.Infof("Authority registered: id=%s", authorityID)
-	return in.RegisterAuthorityResult{Success: true, AuthorityID: authorityID}, nil
+	logger.Infof("Authority registered: id=%s", req.AuthorityID)
+	return in.RegisterAuthorityResult{Success: true, AuthorityID: req.AuthorityID}, nil
 }

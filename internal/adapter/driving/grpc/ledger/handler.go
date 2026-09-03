@@ -133,12 +133,23 @@ func (h *Handler) SubmitTransaction(ctx context.Context, req *pb.SubmitTransacti
 
 // RegisterAuthority implements pb.LedgerServiceServer.
 // The caller must prove key ownership by signing their own public key bytes.
+// All cryptographic verification happens here before delegating to the use case.
 func (h *Handler) RegisterAuthority(ctx context.Context, req *pb.RegisterAuthorityRequest) (*pb.RegisterAuthorityResponse, error) {
 	logger.Infof("RegisterAuthority from pub key %x", req.GetPubKey())
 
+	pubKey := ed25519.PublicKey(req.GetPubKey())
+
+	// Verify the caller owns the private key: signature must be over the raw public key bytes.
+	if !ed25519.Verify(pubKey, req.GetPubKey(), req.GetSignature()) {
+		logger.Warnf("Invalid self-signature for RegisterAuthority pub key %x", req.GetPubKey())
+		return &pb.RegisterAuthorityResponse{Success: false, ErrorMessage: "invalid self-signature"}, nil
+	}
+
+	authorityID := crypto.PubKeyToPlayerID(pubKey)
+
 	domainReq := in.RegisterAuthorityRequest{
-		PubKey:    req.GetPubKey(),
-		Signature: req.GetSignature(),
+		PubKey:      req.GetPubKey(),
+		AuthorityID: authorityID,
 	}
 
 	result, err := h.ledger.RegisterAuthority(ctx, domainReq)

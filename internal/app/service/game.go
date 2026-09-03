@@ -3,13 +3,19 @@ package service
 import (
 	"context"
 	"fmt"
-	"rgb-game/config"
 	"rgb-game/internal/app/port/in"
 	"rgb-game/internal/app/port/out"
 	"rgb-game/internal/domain/enum"
 	"rgb-game/pkg/logger"
 	"sync"
+	"time"
 )
+
+// GameServiceConfig holds the tunable parameters needed by GameService.
+// It is defined here in the application layer to avoid importing the config package.
+type GameServiceConfig struct {
+	MissionCooldown time.Duration
+}
 
 // GameService implements in.GameUseCase.
 // It contains no transport-layer imports — all gRPC concerns live in the driving adapter.
@@ -17,7 +23,7 @@ type GameService struct {
 	missionSvc   *missionService
 	auth         out.FullAuthority
 	ledgerClient out.LedgerClient
-	cfg          *config.GameConfig
+	cfg          GameServiceConfig
 	mintMu       sync.Mutex // serialises MINT submissions to prevent authority nonce races
 }
 
@@ -26,7 +32,7 @@ func NewGameService(
 	missionRepo out.MissionRepository,
 	auth out.FullAuthority,
 	ledgerClient out.LedgerClient,
-	cfg *config.GameConfig,
+	cfg GameServiceConfig,
 ) *GameService {
 	return &GameService{
 		missionSvc:   newMissionService(missionRepo, cfg),
@@ -51,7 +57,7 @@ func (s *GameService) RequestMission(ctx context.Context, playerID string) (in.R
 	return in.RequestMissionResult{
 		MissionID:       record.ID,
 		RewardColor:     enum.Color(record.RewardColor),
-		CooldownSeconds: int32(s.cfg.Cooldown().Seconds()),
+		CooldownSeconds: int32(s.cfg.MissionCooldown.Seconds()),
 	}, nil
 }
 

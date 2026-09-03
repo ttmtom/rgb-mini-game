@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"rgb-game/config"
 	"rgb-game/internal/app/port/out"
 	"rgb-game/internal/domain/types"
 	"rgb-game/pkg/logger"
@@ -17,12 +16,12 @@ import (
 // issuing, cooldown enforcement, validation, and completion.
 // It is unexported — consumed only by GameService within this package.
 type missionService struct {
-	repo out.MissionRepository
-	cfg  *config.GameConfig
+	repo     out.MissionRepository
+	cooldown time.Duration
 }
 
-func newMissionService(repo out.MissionRepository, cfg *config.GameConfig) *missionService {
-	return &missionService{repo: repo, cfg: cfg}
+func newMissionService(repo out.MissionRepository, cfg GameServiceConfig) *missionService {
+	return &missionService{repo: repo, cooldown: cfg.MissionCooldown}
 }
 
 // requestMission tries to issue a new mission for the player.
@@ -59,7 +58,7 @@ func (s *missionService) requestMission(ctx context.Context, playerID string) (*
 		RewardColor: int32(rand.Intn(3)),
 		IssuedAt:    time.Now().Unix(),
 	}
-	if err := s.repo.Create(ctx, record, s.cfg.Cooldown()); err != nil {
+	if err := s.repo.Create(ctx, record, s.cooldown); err != nil {
 		return nil, 0, fmt.Errorf("store mission: %w", err)
 	}
 
@@ -85,12 +84,12 @@ func (s *missionService) validateAndComplete(ctx context.Context, missionID, pla
 	}
 
 	elapsed := time.Since(time.Unix(record.IssuedAt, 0))
-	if elapsed < s.cfg.Cooldown() {
-		remaining := int32((s.cfg.Cooldown() - elapsed).Seconds())
+	if elapsed < s.cooldown {
+		remaining := int32((s.cooldown - elapsed).Seconds())
 		return nil, fmt.Errorf("mission not yet ready, %ds remaining", remaining)
 	}
 
-	if err := s.repo.Complete(ctx, missionID, playerID, s.cfg.Cooldown()); err != nil {
+	if err := s.repo.Complete(ctx, missionID, playerID, s.cooldown); err != nil {
 		return nil, fmt.Errorf("complete mission: %w", err)
 	}
 

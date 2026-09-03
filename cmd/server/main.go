@@ -61,7 +61,9 @@ func main() {
 	ledgerClient := drivenledger.New(pb.NewLedgerServiceClient(ledgerConn))
 
 	// ── Application service ──────────────────────────────────────────────
-	gameSvc := service.NewGameService(missionRepo, auth, ledgerClient, cfg.GameConfig)
+	gameSvc := service.NewGameService(missionRepo, auth, ledgerClient, service.GameServiceConfig{
+		MissionCooldown: cfg.GameConfig.Cooldown(),
+	})
 
 	// ── Driving adapter (gRPC handler) ───────────────────────────────────
 	grpcServer := grpc.NewServer()
