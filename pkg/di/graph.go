@@ -2,6 +2,7 @@ package di
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"strings"
 )
@@ -28,8 +29,8 @@ func (c *Container) Graph() string {
 	for key, entry := range providers {
 		ft := entry.fn.Type()
 		src := dotLabel(key)
-		for i := 0; i < ft.NumIn(); i++ {
-			argKey := providerKey{typ: ft.In(i)}
+		for in := range ft.Ins() {
+			argKey := providerKey{typ: in}
 			dst := dotLabel(argKey)
 			fmt.Fprintf(&sb, "  %s -> %s;\n", quote(src), quote(dst))
 		}
@@ -48,13 +49,9 @@ func (c *Container) Graph() string {
 func (c *Container) allProviders() map[providerKey]providerEntry {
 	result := make(map[providerKey]providerEntry)
 	if c.parent != nil {
-		for k, v := range c.parent.allProviders() {
-			result[k] = v
-		}
+		maps.Copy(result, c.parent.allProviders())
 	}
-	for k, v := range c.providers {
-		result[k] = v
-	}
+	maps.Copy(result, c.providers)
 	return result
 }
 
@@ -70,7 +67,7 @@ func dotLabel(key providerKey) string {
 // typeName returns a compact, readable name for a reflect.Type.
 func typeName(t reflect.Type) string {
 	switch t.Kind() {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		return "*" + typeName(t.Elem())
 	case reflect.Interface:
 		return t.String()

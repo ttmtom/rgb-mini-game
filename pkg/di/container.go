@@ -19,6 +19,7 @@ package di
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 )
 
@@ -50,7 +51,7 @@ type cleanupEntry struct {
 // Container is the DI container.
 // The zero value is not usable; create one with New().
 type Container struct {
-	parent    *Container              // non-nil for child scopes
+	parent    *Container // non-nil for child scopes
 	providers map[providerKey]providerEntry
 	instances map[providerKey]reflect.Value // singleton / scoped cache
 	cleanups  []cleanupEntry                // LIFO on Close
@@ -93,7 +94,7 @@ func (c *Container) ProvideNamed(name string, fn any, opts ...Option) *Container
 //	c.ProvideAs(repositories.NewPlayerRepository, (*out.PlayerRepository)(nil))
 func (c *Container) ProvideAs(fn any, iface any, opts ...Option) *Container {
 	ifaceType := reflect.TypeOf(iface)
-	if ifaceType == nil || ifaceType.Kind() != reflect.Ptr || ifaceType.Elem().Kind() != reflect.Interface {
+	if ifaceType == nil || ifaceType.Kind() != reflect.Pointer || ifaceType.Elem().Kind() != reflect.Interface {
 		panic("di: ProvideAs: iface must be a nil pointer to an interface, e.g. (*MyIface)(nil)")
 	}
 	return c.registerAs("", fn, ifaceType.Elem(), opts)
@@ -102,7 +103,7 @@ func (c *Container) ProvideAs(fn any, iface any, opts ...Option) *Container {
 // ProvideAsNamed is like ProvideAs but registers under a name tag.
 func (c *Container) ProvideAsNamed(name string, fn any, iface any, opts ...Option) *Container {
 	ifaceType := reflect.TypeOf(iface)
-	if ifaceType == nil || ifaceType.Kind() != reflect.Ptr || ifaceType.Elem().Kind() != reflect.Interface {
+	if ifaceType == nil || ifaceType.Kind() != reflect.Pointer || ifaceType.Elem().Kind() != reflect.Interface {
 		panic("di: ProvideAsNamed: iface must be a nil pointer to an interface")
 	}
 	return c.registerAs(name, fn, ifaceType.Elem(), opts)
@@ -120,10 +121,10 @@ func (c *Container) ProvideAsNamed(name string, fn any, iface any, opts ...Optio
 func (c *Container) Alias(iface any, concrete any) *Container {
 	ifaceType := reflect.TypeOf(iface)
 	concreteType := reflect.TypeOf(concrete)
-	if ifaceType == nil || ifaceType.Kind() != reflect.Ptr || ifaceType.Elem().Kind() != reflect.Interface {
+	if ifaceType == nil || ifaceType.Kind() != reflect.Pointer || ifaceType.Elem().Kind() != reflect.Interface {
 		panic("di: Alias: first argument must be a nil pointer to an interface")
 	}
-	if concreteType == nil || concreteType.Kind() != reflect.Ptr {
+	if concreteType == nil || concreteType.Kind() != reflect.Pointer {
 		panic("di: Alias: second argument must be a nil pointer to the concrete type")
 	}
 	ifaceElem := ifaceType.Elem()
@@ -187,7 +188,7 @@ func (c *Container) MustResolve(target any) *Container {
 
 func (c *Container) resolveNamed(name string, target any) error {
 	tv := reflect.ValueOf(target)
-	if tv.Kind() != reflect.Ptr || tv.IsNil() {
+	if tv.Kind() != reflect.Pointer || tv.IsNil() {
 		return fmt.Errorf("di: Resolve: target must be a non-nil pointer, got %T", target)
 	}
 	key := providerKey{typ: tv.Elem().Type(), name: name}
@@ -203,15 +204,13 @@ func (c *Container) resolveNamed(name string, target any) error {
 // resolvingPath tracks the in-progress chain for cycle detection.
 func (c *Container) resolve(key providerKey, resolvingPath []providerKey) (reflect.Value, error) {
 	// Cycle detection.
-	for _, k := range resolvingPath {
-		if k == key {
-			chain := make([]string, len(resolvingPath)+1)
-			for i, k := range resolvingPath {
-				chain[i] = k.String()
-			}
-			chain[len(resolvingPath)] = key.String()
-			return reflect.Value{}, fmt.Errorf("di: cycle detected: %s", strings.Join(chain, " → "))
+	if slices.Contains(resolvingPath, key) {
+		chain := make([]string, len(resolvingPath)+1)
+		for i, k := range resolvingPath {
+			chain[i] = k.String()
 		}
+		chain[len(resolvingPath)] = key.String()
+		return reflect.Value{}, fmt.Errorf("di: cycle detected: %s", strings.Join(chain, " → "))
 	}
 
 	entry, ok := c.lookupProvider(key)
@@ -305,8 +304,8 @@ func (c *Container) storeSingleton(key providerKey, val reflect.Value) {
 // Close calls all registered cleanup functions in LIFO order.
 // For child scopes, only the child's cleanups are called.
 func (c *Container) Close() {
-	for i := len(c.cleanups) - 1; i >= 0; i-- {
-		c.cleanups[i].cleanup()
+	for _, v := range slices.Backward(c.cleanups) {
+		v.cleanup()
 	}
 	c.cleanups = nil
 }

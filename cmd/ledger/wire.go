@@ -29,7 +29,7 @@ func wire(cfg *config.LedgerConfig, sealerCfg *config.BlockSealerConfig) (*grpc.
 	c := di.New()
 
 	// ── Config values (zero-arg lambdas close over outer cfg) ─────────────
-	c.Provide(func() *config.DatabaseConfig  { return cfg.DatabaseConfig })
+	c.Provide(func() *config.DatabaseConfig { return cfg.DatabaseConfig })
 	c.Provide(func() *config.AuthorityConfig { return cfg.AuthorityConfig })
 
 	// ── Infrastructure ────────────────────────────────────────────────────
@@ -38,11 +38,11 @@ func wire(cfg *config.LedgerConfig, sealerCfg *config.BlockSealerConfig) (*grpc.
 	c.Provide(authority.Load) // *config.AuthorityConfig → (*authority.Authority, error)
 
 	// ── Repositories — registered under their port/out interface types ─────
-	c.ProvideAs(repositories.NewPlayerRepository,      (*out.PlayerRepository)(nil))
+	c.ProvideAs(repositories.NewPlayerRepository, (*out.PlayerRepository)(nil))
 	c.ProvideAs(repositories.NewTransactionRepository, (*out.TransactionRepository)(nil))
-	c.ProvideAs(repositories.NewBlockRepository,       (*out.BlockRepository)(nil))
-	c.ProvideAs(repositories.NewAuthorityRepository,   (*out.AuthorityRepository)(nil))
-	c.ProvideAs(repositories.NewTransactor,            (*out.Transactor)(nil))
+	c.ProvideAs(repositories.NewBlockRepository, (*out.BlockRepository)(nil))
+	c.ProvideAs(repositories.NewAuthorityRepository, (*out.AuthorityRepository)(nil))
+	c.ProvideAs(repositories.NewTransactor, (*out.Transactor)(nil))
 
 	// ── Domain engine ─────────────────────────────────────────────────────
 	c.ProvideAs(engine.New, (*out.GameEngine)(nil))
@@ -111,4 +111,3 @@ func wire(cfg *config.LedgerConfig, sealerCfg *config.BlockSealerConfig) (*grpc.
 
 	return s, startBackground, nil
 }
-
