@@ -28,7 +28,7 @@ services:
         depends_on:
             - postgres
         volumes:
-            - ./db/migration:/flyway/sql
+            - ./internal/adapter/driven/postgres/migration:/flyway/sql
         environment:
             FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
             FLYWAY_USER: ${POSTGRES_USER}
