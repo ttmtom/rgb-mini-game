@@ -119,6 +119,61 @@ func (MissionDifficulty) EnumDescriptor() ([]byte, []int) {
 	return file_api_proto_v1_game_proto_rawDescGZIP(), []int{1}
 }
 
+type ChallengeStatus int32
+
+const (
+	ChallengeStatus_PENDING   ChallengeStatus = 0
+	ChallengeStatus_ACCEPTED  ChallengeStatus = 1
+	ChallengeStatus_DECLINED  ChallengeStatus = 2
+	ChallengeStatus_EXPIRED   ChallengeStatus = 3
+	ChallengeStatus_COMPLETED ChallengeStatus = 4
+)
+
+// Enum value maps for ChallengeStatus.
+var (
+	ChallengeStatus_name = map[int32]string{
+		0: "PENDING",
+		1: "ACCEPTED",
+		2: "DECLINED",
+		3: "EXPIRED",
+		4: "COMPLETED",
+	}
+	ChallengeStatus_value = map[string]int32{
+		"PENDING":   0,
+		"ACCEPTED":  1,
+		"DECLINED":  2,
+		"EXPIRED":   3,
+		"COMPLETED": 4,
+	}
+)
+
+func (x ChallengeStatus) Enum() *ChallengeStatus {
+	p := new(ChallengeStatus)
+	*p = x
+	return p
+}
+
+func (x ChallengeStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ChallengeStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_proto_v1_game_proto_enumTypes[2].Descriptor()
+}
+
+func (ChallengeStatus) Type() protoreflect.EnumType {
+	return &file_api_proto_v1_game_proto_enumTypes[2]
+}
+
+func (x ChallengeStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ChallengeStatus.Descriptor instead.
+func (ChallengeStatus) EnumDescriptor() ([]byte, []int) {
+	return file_api_proto_v1_game_proto_rawDescGZIP(), []int{2}
+}
+
 type RequestMissionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PlayerId      string                 `protobuf:"bytes,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
@@ -375,6 +430,466 @@ func (x *CompleteMissionResponse) GetNewBalance() *BalanceResponse {
 	return nil
 }
 
+type ProposeChallengeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProposerId    string                 `protobuf:"bytes,1,opt,name=proposer_id,json=proposerId,proto3" json:"proposer_id,omitempty"`
+	OpponentId    string                 `protobuf:"bytes,2,opt,name=opponent_id,json=opponentId,proto3" json:"opponent_id,omitempty"`
+	OfferRed      uint32                 `protobuf:"varint,3,opt,name=offer_red,json=offerRed,proto3" json:"offer_red,omitempty"`
+	OfferGreen    uint32                 `protobuf:"varint,4,opt,name=offer_green,json=offerGreen,proto3" json:"offer_green,omitempty"`
+	OfferBlue     uint32                 `protobuf:"varint,5,opt,name=offer_blue,json=offerBlue,proto3" json:"offer_blue,omitempty"`
+	WantRed       uint32                 `protobuf:"varint,6,opt,name=want_red,json=wantRed,proto3" json:"want_red,omitempty"`
+	WantGreen     uint32                 `protobuf:"varint,7,opt,name=want_green,json=wantGreen,proto3" json:"want_green,omitempty"`
+	WantBlue      uint32                 `protobuf:"varint,8,opt,name=want_blue,json=wantBlue,proto3" json:"want_blue,omitempty"`
+	RawPayload    []byte                 `protobuf:"bytes,9,opt,name=raw_payload,json=rawPayload,proto3" json:"raw_payload,omitempty"`
+	Signature     []byte                 `protobuf:"bytes,10,opt,name=signature,proto3" json:"signature,omitempty"`
+	SenderPubKey  []byte                 `protobuf:"bytes,11,opt,name=sender_pub_key,json=senderPubKey,proto3" json:"sender_pub_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProposeChallengeRequest) Reset() {
+	*x = ProposeChallengeRequest{}
+	mi := &file_api_proto_v1_game_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProposeChallengeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProposeChallengeRequest) ProtoMessage() {}
+
+func (x *ProposeChallengeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_game_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProposeChallengeRequest.ProtoReflect.Descriptor instead.
+func (*ProposeChallengeRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_game_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ProposeChallengeRequest) GetProposerId() string {
+	if x != nil {
+		return x.ProposerId
+	}
+	return ""
+}
+
+func (x *ProposeChallengeRequest) GetOpponentId() string {
+	if x != nil {
+		return x.OpponentId
+	}
+	return ""
+}
+
+func (x *ProposeChallengeRequest) GetOfferRed() uint32 {
+	if x != nil {
+		return x.OfferRed
+	}
+	return 0
+}
+
+func (x *ProposeChallengeRequest) GetOfferGreen() uint32 {
+	if x != nil {
+		return x.OfferGreen
+	}
+	return 0
+}
+
+func (x *ProposeChallengeRequest) GetOfferBlue() uint32 {
+	if x != nil {
+		return x.OfferBlue
+	}
+	return 0
+}
+
+func (x *ProposeChallengeRequest) GetWantRed() uint32 {
+	if x != nil {
+		return x.WantRed
+	}
+	return 0
+}
+
+func (x *ProposeChallengeRequest) GetWantGreen() uint32 {
+	if x != nil {
+		return x.WantGreen
+	}
+	return 0
+}
+
+func (x *ProposeChallengeRequest) GetWantBlue() uint32 {
+	if x != nil {
+		return x.WantBlue
+	}
+	return 0
+}
+
+func (x *ProposeChallengeRequest) GetRawPayload() []byte {
+	if x != nil {
+		return x.RawPayload
+	}
+	return nil
+}
+
+func (x *ProposeChallengeRequest) GetSignature() []byte {
+	if x != nil {
+		return x.Signature
+	}
+	return nil
+}
+
+func (x *ProposeChallengeRequest) GetSenderPubKey() []byte {
+	if x != nil {
+		return x.SenderPubKey
+	}
+	return nil
+}
+
+type ChallengeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChallengeId   string                 `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	ProposerId    string                 `protobuf:"bytes,2,opt,name=proposer_id,json=proposerId,proto3" json:"proposer_id,omitempty"`
+	OpponentId    string                 `protobuf:"bytes,3,opt,name=opponent_id,json=opponentId,proto3" json:"opponent_id,omitempty"`
+	OfferRed      uint32                 `protobuf:"varint,4,opt,name=offer_red,json=offerRed,proto3" json:"offer_red,omitempty"`
+	OfferGreen    uint32                 `protobuf:"varint,5,opt,name=offer_green,json=offerGreen,proto3" json:"offer_green,omitempty"`
+	OfferBlue     uint32                 `protobuf:"varint,6,opt,name=offer_blue,json=offerBlue,proto3" json:"offer_blue,omitempty"`
+	WantRed       uint32                 `protobuf:"varint,7,opt,name=want_red,json=wantRed,proto3" json:"want_red,omitempty"`
+	WantGreen     uint32                 `protobuf:"varint,8,opt,name=want_green,json=wantGreen,proto3" json:"want_green,omitempty"`
+	WantBlue      uint32                 `protobuf:"varint,9,opt,name=want_blue,json=wantBlue,proto3" json:"want_blue,omitempty"`
+	Status        ChallengeStatus        `protobuf:"varint,10,opt,name=status,proto3,enum=rgb.ledger.v1.ChallengeStatus" json:"status,omitempty"`
+	ExpiresAt     int64                  `protobuf:"varint,11,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	ErrorMessage  string                 `protobuf:"bytes,12,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChallengeResponse) Reset() {
+	*x = ChallengeResponse{}
+	mi := &file_api_proto_v1_game_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChallengeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChallengeResponse) ProtoMessage() {}
+
+func (x *ChallengeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_game_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChallengeResponse.ProtoReflect.Descriptor instead.
+func (*ChallengeResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_game_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ChallengeResponse) GetChallengeId() string {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return ""
+}
+
+func (x *ChallengeResponse) GetProposerId() string {
+	if x != nil {
+		return x.ProposerId
+	}
+	return ""
+}
+
+func (x *ChallengeResponse) GetOpponentId() string {
+	if x != nil {
+		return x.OpponentId
+	}
+	return ""
+}
+
+func (x *ChallengeResponse) GetOfferRed() uint32 {
+	if x != nil {
+		return x.OfferRed
+	}
+	return 0
+}
+
+func (x *ChallengeResponse) GetOfferGreen() uint32 {
+	if x != nil {
+		return x.OfferGreen
+	}
+	return 0
+}
+
+func (x *ChallengeResponse) GetOfferBlue() uint32 {
+	if x != nil {
+		return x.OfferBlue
+	}
+	return 0
+}
+
+func (x *ChallengeResponse) GetWantRed() uint32 {
+	if x != nil {
+		return x.WantRed
+	}
+	return 0
+}
+
+func (x *ChallengeResponse) GetWantGreen() uint32 {
+	if x != nil {
+		return x.WantGreen
+	}
+	return 0
+}
+
+func (x *ChallengeResponse) GetWantBlue() uint32 {
+	if x != nil {
+		return x.WantBlue
+	}
+	return 0
+}
+
+func (x *ChallengeResponse) GetStatus() ChallengeStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ChallengeStatus_PENDING
+}
+
+func (x *ChallengeResponse) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
+func (x *ChallengeResponse) GetErrorMessage() string {
+	if x != nil {
+		return x.ErrorMessage
+	}
+	return ""
+}
+
+type RespondChallengeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChallengeId   string                 `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	PlayerId      string                 `protobuf:"bytes,2,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	Accept        bool                   `protobuf:"varint,3,opt,name=accept,proto3" json:"accept,omitempty"`
+	RawPayload    []byte                 `protobuf:"bytes,4,opt,name=raw_payload,json=rawPayload,proto3" json:"raw_payload,omitempty"`
+	Signature     []byte                 `protobuf:"bytes,5,opt,name=signature,proto3" json:"signature,omitempty"`
+	SenderPubKey  []byte                 `protobuf:"bytes,6,opt,name=sender_pub_key,json=senderPubKey,proto3" json:"sender_pub_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RespondChallengeRequest) Reset() {
+	*x = RespondChallengeRequest{}
+	mi := &file_api_proto_v1_game_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RespondChallengeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RespondChallengeRequest) ProtoMessage() {}
+
+func (x *RespondChallengeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_game_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RespondChallengeRequest.ProtoReflect.Descriptor instead.
+func (*RespondChallengeRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_game_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *RespondChallengeRequest) GetChallengeId() string {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return ""
+}
+
+func (x *RespondChallengeRequest) GetPlayerId() string {
+	if x != nil {
+		return x.PlayerId
+	}
+	return ""
+}
+
+func (x *RespondChallengeRequest) GetAccept() bool {
+	if x != nil {
+		return x.Accept
+	}
+	return false
+}
+
+func (x *RespondChallengeRequest) GetRawPayload() []byte {
+	if x != nil {
+		return x.RawPayload
+	}
+	return nil
+}
+
+func (x *RespondChallengeRequest) GetSignature() []byte {
+	if x != nil {
+		return x.Signature
+	}
+	return nil
+}
+
+func (x *RespondChallengeRequest) GetSenderPubKey() []byte {
+	if x != nil {
+		return x.SenderPubKey
+	}
+	return nil
+}
+
+type RespondChallengeResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Success        bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	ErrorMessage   string                 `protobuf:"bytes,2,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	ProposerTxHash string                 `protobuf:"bytes,3,opt,name=proposer_tx_hash,json=proposerTxHash,proto3" json:"proposer_tx_hash,omitempty"`
+	OpponentTxHash string                 `protobuf:"bytes,4,opt,name=opponent_tx_hash,json=opponentTxHash,proto3" json:"opponent_tx_hash,omitempty"`
+	NewBalance     *BalanceResponse       `protobuf:"bytes,5,opt,name=new_balance,json=newBalance,proto3" json:"new_balance,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *RespondChallengeResponse) Reset() {
+	*x = RespondChallengeResponse{}
+	mi := &file_api_proto_v1_game_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RespondChallengeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RespondChallengeResponse) ProtoMessage() {}
+
+func (x *RespondChallengeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_game_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RespondChallengeResponse.ProtoReflect.Descriptor instead.
+func (*RespondChallengeResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_game_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *RespondChallengeResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *RespondChallengeResponse) GetErrorMessage() string {
+	if x != nil {
+		return x.ErrorMessage
+	}
+	return ""
+}
+
+func (x *RespondChallengeResponse) GetProposerTxHash() string {
+	if x != nil {
+		return x.ProposerTxHash
+	}
+	return ""
+}
+
+func (x *RespondChallengeResponse) GetOpponentTxHash() string {
+	if x != nil {
+		return x.OpponentTxHash
+	}
+	return ""
+}
+
+func (x *RespondChallengeResponse) GetNewBalance() *BalanceResponse {
+	if x != nil {
+		return x.NewBalance
+	}
+	return nil
+}
+
+type GetChallengeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChallengeId   string                 `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetChallengeRequest) Reset() {
+	*x = GetChallengeRequest{}
+	mi := &file_api_proto_v1_game_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetChallengeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetChallengeRequest) ProtoMessage() {}
+
+func (x *GetChallengeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_game_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetChallengeRequest.ProtoReflect.Descriptor instead.
+func (*GetChallengeRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_game_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *GetChallengeRequest) GetChallengeId() string {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return ""
+}
+
 var File_api_proto_v1_game_proto protoreflect.FileDescriptor
 
 const file_api_proto_v1_game_proto_rawDesc = "" +
@@ -404,7 +919,63 @@ const file_api_proto_v1_game_proto_rawDesc = "" +
 	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\x12\x17\n" +
 	"\atx_hash\x18\x03 \x01(\tR\x06txHash\x12?\n" +
 	"\vnew_balance\x18\x04 \x01(\v2\x1e.rgb.ledger.v1.BalanceResponseR\n" +
-	"newBalance*+\n" +
+	"newBalance\"\xf4\x02\n" +
+	"\x17ProposeChallengeRequest\x12\x1f\n" +
+	"\vproposer_id\x18\x01 \x01(\tR\n" +
+	"proposerId\x12\x1f\n" +
+	"\vopponent_id\x18\x02 \x01(\tR\n" +
+	"opponentId\x12\x1b\n" +
+	"\toffer_red\x18\x03 \x01(\rR\bofferRed\x12\x1f\n" +
+	"\voffer_green\x18\x04 \x01(\rR\n" +
+	"offerGreen\x12\x1d\n" +
+	"\n" +
+	"offer_blue\x18\x05 \x01(\rR\tofferBlue\x12\x19\n" +
+	"\bwant_red\x18\x06 \x01(\rR\awantRed\x12\x1d\n" +
+	"\n" +
+	"want_green\x18\a \x01(\rR\twantGreen\x12\x1b\n" +
+	"\twant_blue\x18\b \x01(\rR\bwantBlue\x12\x1f\n" +
+	"\vraw_payload\x18\t \x01(\fR\n" +
+	"rawPayload\x12\x1c\n" +
+	"\tsignature\x18\n" +
+	" \x01(\fR\tsignature\x12$\n" +
+	"\x0esender_pub_key\x18\v \x01(\fR\fsenderPubKey\"\xa8\x03\n" +
+	"\x11ChallengeResponse\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\tR\vchallengeId\x12\x1f\n" +
+	"\vproposer_id\x18\x02 \x01(\tR\n" +
+	"proposerId\x12\x1f\n" +
+	"\vopponent_id\x18\x03 \x01(\tR\n" +
+	"opponentId\x12\x1b\n" +
+	"\toffer_red\x18\x04 \x01(\rR\bofferRed\x12\x1f\n" +
+	"\voffer_green\x18\x05 \x01(\rR\n" +
+	"offerGreen\x12\x1d\n" +
+	"\n" +
+	"offer_blue\x18\x06 \x01(\rR\tofferBlue\x12\x19\n" +
+	"\bwant_red\x18\a \x01(\rR\awantRed\x12\x1d\n" +
+	"\n" +
+	"want_green\x18\b \x01(\rR\twantGreen\x12\x1b\n" +
+	"\twant_blue\x18\t \x01(\rR\bwantBlue\x126\n" +
+	"\x06status\x18\n" +
+	" \x01(\x0e2\x1e.rgb.ledger.v1.ChallengeStatusR\x06status\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\v \x01(\x03R\texpiresAt\x12#\n" +
+	"\rerror_message\x18\f \x01(\tR\ferrorMessage\"\xd6\x01\n" +
+	"\x17RespondChallengeRequest\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\tR\vchallengeId\x12\x1b\n" +
+	"\tplayer_id\x18\x02 \x01(\tR\bplayerId\x12\x16\n" +
+	"\x06accept\x18\x03 \x01(\bR\x06accept\x12\x1f\n" +
+	"\vraw_payload\x18\x04 \x01(\fR\n" +
+	"rawPayload\x12\x1c\n" +
+	"\tsignature\x18\x05 \x01(\fR\tsignature\x12$\n" +
+	"\x0esender_pub_key\x18\x06 \x01(\fR\fsenderPubKey\"\xee\x01\n" +
+	"\x18RespondChallengeResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12#\n" +
+	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\x12(\n" +
+	"\x10proposer_tx_hash\x18\x03 \x01(\tR\x0eproposerTxHash\x12(\n" +
+	"\x10opponent_tx_hash\x18\x04 \x01(\tR\x0eopponentTxHash\x12?\n" +
+	"\vnew_balance\x18\x05 \x01(\v2\x1e.rgb.ledger.v1.BalanceResponseR\n" +
+	"newBalance\"8\n" +
+	"\x13GetChallengeRequest\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\tR\vchallengeId*+\n" +
 	"\vRewardColor\x12\a\n" +
 	"\x03RED\x10\x00\x12\t\n" +
 	"\x05GREEN\x10\x01\x12\b\n" +
@@ -413,10 +984,19 @@ const file_api_proto_v1_game_proto_rawDesc = "" +
 	"\x04EASY\x10\x00\x12\n" +
 	"\n" +
 	"\x06MEDIUM\x10\x01\x12\b\n" +
-	"\x04HARD\x10\x022\xcb\x01\n" +
+	"\x04HARD\x10\x02*V\n" +
+	"\x0fChallengeStatus\x12\v\n" +
+	"\aPENDING\x10\x00\x12\f\n" +
+	"\bACCEPTED\x10\x01\x12\f\n" +
+	"\bDECLINED\x10\x02\x12\v\n" +
+	"\aEXPIRED\x10\x03\x12\r\n" +
+	"\tCOMPLETED\x10\x042\xea\x03\n" +
 	"\vGameService\x12X\n" +
 	"\x0eRequestMission\x12$.rgb.ledger.v1.RequestMissionRequest\x1a\x1e.rgb.ledger.v1.MissionResponse\"\x00\x12b\n" +
-	"\x0fCompleteMission\x12%.rgb.ledger.v1.CompleteMissionRequest\x1a&.rgb.ledger.v1.CompleteMissionResponse\"\x00B\n" +
+	"\x0fCompleteMission\x12%.rgb.ledger.v1.CompleteMissionRequest\x1a&.rgb.ledger.v1.CompleteMissionResponse\"\x00\x12^\n" +
+	"\x10ProposeChallenge\x12&.rgb.ledger.v1.ProposeChallengeRequest\x1a .rgb.ledger.v1.ChallengeResponse\"\x00\x12e\n" +
+	"\x10RespondChallenge\x12&.rgb.ledger.v1.RespondChallengeRequest\x1a'.rgb.ledger.v1.RespondChallengeResponse\"\x00\x12V\n" +
+	"\fGetChallenge\x12\".rgb.ledger.v1.GetChallengeRequest\x1a .rgb.ledger.v1.ChallengeResponse\"\x00B\n" +
 	"Z\b./pkg/pbb\x06proto3"
 
 var (
@@ -431,30 +1011,44 @@ func file_api_proto_v1_game_proto_rawDescGZIP() []byte {
 	return file_api_proto_v1_game_proto_rawDescData
 }
 
-var file_api_proto_v1_game_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_api_proto_v1_game_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_api_proto_v1_game_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_api_proto_v1_game_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_api_proto_v1_game_proto_goTypes = []any{
-	(RewardColor)(0),                // 0: rgb.ledger.v1.RewardColor
-	(MissionDifficulty)(0),          // 1: rgb.ledger.v1.MissionDifficulty
-	(*RequestMissionRequest)(nil),   // 2: rgb.ledger.v1.RequestMissionRequest
-	(*MissionResponse)(nil),         // 3: rgb.ledger.v1.MissionResponse
-	(*CompleteMissionRequest)(nil),  // 4: rgb.ledger.v1.CompleteMissionRequest
-	(*CompleteMissionResponse)(nil), // 5: rgb.ledger.v1.CompleteMissionResponse
-	(*BalanceResponse)(nil),         // 6: rgb.ledger.v1.BalanceResponse
+	(RewardColor)(0),                 // 0: rgb.ledger.v1.RewardColor
+	(MissionDifficulty)(0),           // 1: rgb.ledger.v1.MissionDifficulty
+	(ChallengeStatus)(0),             // 2: rgb.ledger.v1.ChallengeStatus
+	(*RequestMissionRequest)(nil),    // 3: rgb.ledger.v1.RequestMissionRequest
+	(*MissionResponse)(nil),          // 4: rgb.ledger.v1.MissionResponse
+	(*CompleteMissionRequest)(nil),   // 5: rgb.ledger.v1.CompleteMissionRequest
+	(*CompleteMissionResponse)(nil),  // 6: rgb.ledger.v1.CompleteMissionResponse
+	(*ProposeChallengeRequest)(nil),  // 7: rgb.ledger.v1.ProposeChallengeRequest
+	(*ChallengeResponse)(nil),        // 8: rgb.ledger.v1.ChallengeResponse
+	(*RespondChallengeRequest)(nil),  // 9: rgb.ledger.v1.RespondChallengeRequest
+	(*RespondChallengeResponse)(nil), // 10: rgb.ledger.v1.RespondChallengeResponse
+	(*GetChallengeRequest)(nil),      // 11: rgb.ledger.v1.GetChallengeRequest
+	(*BalanceResponse)(nil),          // 12: rgb.ledger.v1.BalanceResponse
 }
 var file_api_proto_v1_game_proto_depIdxs = []int32{
-	0, // 0: rgb.ledger.v1.MissionResponse.reward_color:type_name -> rgb.ledger.v1.RewardColor
-	1, // 1: rgb.ledger.v1.MissionResponse.difficulty:type_name -> rgb.ledger.v1.MissionDifficulty
-	6, // 2: rgb.ledger.v1.CompleteMissionResponse.new_balance:type_name -> rgb.ledger.v1.BalanceResponse
-	2, // 3: rgb.ledger.v1.GameService.RequestMission:input_type -> rgb.ledger.v1.RequestMissionRequest
-	4, // 4: rgb.ledger.v1.GameService.CompleteMission:input_type -> rgb.ledger.v1.CompleteMissionRequest
-	3, // 5: rgb.ledger.v1.GameService.RequestMission:output_type -> rgb.ledger.v1.MissionResponse
-	5, // 6: rgb.ledger.v1.GameService.CompleteMission:output_type -> rgb.ledger.v1.CompleteMissionResponse
-	5, // [5:7] is the sub-list for method output_type
-	3, // [3:5] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0,  // 0: rgb.ledger.v1.MissionResponse.reward_color:type_name -> rgb.ledger.v1.RewardColor
+	1,  // 1: rgb.ledger.v1.MissionResponse.difficulty:type_name -> rgb.ledger.v1.MissionDifficulty
+	12, // 2: rgb.ledger.v1.CompleteMissionResponse.new_balance:type_name -> rgb.ledger.v1.BalanceResponse
+	2,  // 3: rgb.ledger.v1.ChallengeResponse.status:type_name -> rgb.ledger.v1.ChallengeStatus
+	12, // 4: rgb.ledger.v1.RespondChallengeResponse.new_balance:type_name -> rgb.ledger.v1.BalanceResponse
+	3,  // 5: rgb.ledger.v1.GameService.RequestMission:input_type -> rgb.ledger.v1.RequestMissionRequest
+	5,  // 6: rgb.ledger.v1.GameService.CompleteMission:input_type -> rgb.ledger.v1.CompleteMissionRequest
+	7,  // 7: rgb.ledger.v1.GameService.ProposeChallenge:input_type -> rgb.ledger.v1.ProposeChallengeRequest
+	9,  // 8: rgb.ledger.v1.GameService.RespondChallenge:input_type -> rgb.ledger.v1.RespondChallengeRequest
+	11, // 9: rgb.ledger.v1.GameService.GetChallenge:input_type -> rgb.ledger.v1.GetChallengeRequest
+	4,  // 10: rgb.ledger.v1.GameService.RequestMission:output_type -> rgb.ledger.v1.MissionResponse
+	6,  // 11: rgb.ledger.v1.GameService.CompleteMission:output_type -> rgb.ledger.v1.CompleteMissionResponse
+	8,  // 12: rgb.ledger.v1.GameService.ProposeChallenge:output_type -> rgb.ledger.v1.ChallengeResponse
+	10, // 13: rgb.ledger.v1.GameService.RespondChallenge:output_type -> rgb.ledger.v1.RespondChallengeResponse
+	8,  // 14: rgb.ledger.v1.GameService.GetChallenge:output_type -> rgb.ledger.v1.ChallengeResponse
+	10, // [10:15] is the sub-list for method output_type
+	5,  // [5:10] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_v1_game_proto_init() }
@@ -468,8 +1062,8 @@ func file_api_proto_v1_game_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_v1_game_proto_rawDesc), len(file_api_proto_v1_game_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   4,
+			NumEnums:      3,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

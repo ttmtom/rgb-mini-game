@@ -7,11 +7,17 @@ option go_package = "./pkg/pb";
 import "api/proto/v1/ledger.proto";
 
 service GameService {
-  // Request a new mission for a player. Returns the reward color and cooldown.
   rpc RequestMission (RequestMissionRequest) returns (MissionResponse) {}
-
-  // Complete a previously requested mission after cooldown has elapsed.
   rpc CompleteMission (CompleteMissionRequest) returns (CompleteMissionResponse) {}
+
+  // ProposeChallenge lets a player challenge another to a token swap.
+  rpc ProposeChallenge (ProposeChallengeRequest) returns (ChallengeResponse) {}
+
+  // RespondChallenge lets the opponent accept or decline a challenge.
+  rpc RespondChallenge (RespondChallengeRequest) returns (RespondChallengeResponse) {}
+
+  // GetChallenge returns the current state of a challenge by ID.
+  rpc GetChallenge (GetChallengeRequest) returns (ChallengeResponse) {}
 }
 
 // =============================================================================
@@ -28,6 +34,14 @@ enum MissionDifficulty {
   EASY = 0;
   MEDIUM = 1;
   HARD = 2;
+}
+
+enum ChallengeStatus {
+  PENDING = 0;
+  ACCEPTED = 1;
+  DECLINED = 2;
+  EXPIRED = 3;
+  COMPLETED = 4;
 }
 
 // =============================================================================
@@ -60,3 +74,56 @@ message CompleteMissionResponse {
   BalanceResponse new_balance = 4;
 }
 
+// =============================================================================
+// Challenge Messages
+// =============================================================================
+
+message ProposeChallengeRequest {
+  string proposer_id = 1;
+  string opponent_id = 2;
+  uint32 offer_red = 3;
+  uint32 offer_green = 4;
+  uint32 offer_blue = 5;
+  uint32 want_red = 6;
+  uint32 want_green = 7;
+  uint32 want_blue = 8;
+  bytes raw_payload = 9;
+  bytes signature = 10;
+  bytes sender_pub_key = 11;
+}
+
+message ChallengeResponse {
+  string challenge_id = 1;
+  string proposer_id = 2;
+  string opponent_id = 3;
+  uint32 offer_red = 4;
+  uint32 offer_green = 5;
+  uint32 offer_blue = 6;
+  uint32 want_red = 7;
+  uint32 want_green = 8;
+  uint32 want_blue = 9;
+  ChallengeStatus status = 10;
+  int64 expires_at = 11;
+  string error_message = 12;
+}
+
+message RespondChallengeRequest {
+  string challenge_id = 1;
+  string player_id = 2;
+  bool accept = 3;
+  bytes raw_payload = 4;
+  bytes signature = 5;
+  bytes sender_pub_key = 6;
+}
+
+message RespondChallengeResponse {
+  bool success = 1;
+  string error_message = 2;
+  string proposer_tx_hash = 3;
+  string opponent_tx_hash = 4;
+  BalanceResponse new_balance = 5;
+}
+
+message GetChallengeRequest {
+  string challenge_id = 1;
+}

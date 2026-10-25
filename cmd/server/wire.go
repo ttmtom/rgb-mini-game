@@ -61,6 +61,7 @@ func wire(cfg *config.GameServerFullConfig) (*grpc.Server, func(), error) {
 
 	// ── Mission repository ────────────────────────────────────────────────
 	c.ProvideAs(drivenredis.NewMissionRepository, (*out.MissionRepository)(nil))
+	c.ProvideAs(drivenredis.NewChallengeRepository, (*out.ChallengeRepository)(nil))
 
 	// ── Game service config + service ─────────────────────────────────────
 	c.Provide(func() service.GameServiceConfig {

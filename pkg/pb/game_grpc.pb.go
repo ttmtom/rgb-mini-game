@@ -19,18 +19,25 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GameService_RequestMission_FullMethodName  = "/rgb.ledger.v1.GameService/RequestMission"
-	GameService_CompleteMission_FullMethodName = "/rgb.ledger.v1.GameService/CompleteMission"
+	GameService_RequestMission_FullMethodName   = "/rgb.ledger.v1.GameService/RequestMission"
+	GameService_CompleteMission_FullMethodName  = "/rgb.ledger.v1.GameService/CompleteMission"
+	GameService_ProposeChallenge_FullMethodName = "/rgb.ledger.v1.GameService/ProposeChallenge"
+	GameService_RespondChallenge_FullMethodName = "/rgb.ledger.v1.GameService/RespondChallenge"
+	GameService_GetChallenge_FullMethodName     = "/rgb.ledger.v1.GameService/GetChallenge"
 )
 
 // GameServiceClient is the client API for GameService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GameServiceClient interface {
-	// Request a new mission for a player. Returns the reward color and cooldown.
 	RequestMission(ctx context.Context, in *RequestMissionRequest, opts ...grpc.CallOption) (*MissionResponse, error)
-	// Complete a previously requested mission after cooldown has elapsed.
 	CompleteMission(ctx context.Context, in *CompleteMissionRequest, opts ...grpc.CallOption) (*CompleteMissionResponse, error)
+	// ProposeChallenge lets a player challenge another to a token swap.
+	ProposeChallenge(ctx context.Context, in *ProposeChallengeRequest, opts ...grpc.CallOption) (*ChallengeResponse, error)
+	// RespondChallenge lets the opponent accept or decline a challenge.
+	RespondChallenge(ctx context.Context, in *RespondChallengeRequest, opts ...grpc.CallOption) (*RespondChallengeResponse, error)
+	// GetChallenge returns the current state of a challenge by ID.
+	GetChallenge(ctx context.Context, in *GetChallengeRequest, opts ...grpc.CallOption) (*ChallengeResponse, error)
 }
 
 type gameServiceClient struct {
@@ -61,14 +68,48 @@ func (c *gameServiceClient) CompleteMission(ctx context.Context, in *CompleteMis
 	return out, nil
 }
 
+func (c *gameServiceClient) ProposeChallenge(ctx context.Context, in *ProposeChallengeRequest, opts ...grpc.CallOption) (*ChallengeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChallengeResponse)
+	err := c.cc.Invoke(ctx, GameService_ProposeChallenge_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gameServiceClient) RespondChallenge(ctx context.Context, in *RespondChallengeRequest, opts ...grpc.CallOption) (*RespondChallengeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RespondChallengeResponse)
+	err := c.cc.Invoke(ctx, GameService_RespondChallenge_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gameServiceClient) GetChallenge(ctx context.Context, in *GetChallengeRequest, opts ...grpc.CallOption) (*ChallengeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChallengeResponse)
+	err := c.cc.Invoke(ctx, GameService_GetChallenge_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GameServiceServer is the server API for GameService service.
 // All implementations must embed UnimplementedGameServiceServer
 // for forward compatibility.
 type GameServiceServer interface {
-	// Request a new mission for a player. Returns the reward color and cooldown.
 	RequestMission(context.Context, *RequestMissionRequest) (*MissionResponse, error)
-	// Complete a previously requested mission after cooldown has elapsed.
 	CompleteMission(context.Context, *CompleteMissionRequest) (*CompleteMissionResponse, error)
+	// ProposeChallenge lets a player challenge another to a token swap.
+	ProposeChallenge(context.Context, *ProposeChallengeRequest) (*ChallengeResponse, error)
+	// RespondChallenge lets the opponent accept or decline a challenge.
+	RespondChallenge(context.Context, *RespondChallengeRequest) (*RespondChallengeResponse, error)
+	// GetChallenge returns the current state of a challenge by ID.
+	GetChallenge(context.Context, *GetChallengeRequest) (*ChallengeResponse, error)
 	mustEmbedUnimplementedGameServiceServer()
 }
 
@@ -84,6 +125,15 @@ func (UnimplementedGameServiceServer) RequestMission(context.Context, *RequestMi
 }
 func (UnimplementedGameServiceServer) CompleteMission(context.Context, *CompleteMissionRequest) (*CompleteMissionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CompleteMission not implemented")
+}
+func (UnimplementedGameServiceServer) ProposeChallenge(context.Context, *ProposeChallengeRequest) (*ChallengeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ProposeChallenge not implemented")
+}
+func (UnimplementedGameServiceServer) RespondChallenge(context.Context, *RespondChallengeRequest) (*RespondChallengeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RespondChallenge not implemented")
+}
+func (UnimplementedGameServiceServer) GetChallenge(context.Context, *GetChallengeRequest) (*ChallengeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetChallenge not implemented")
 }
 func (UnimplementedGameServiceServer) mustEmbedUnimplementedGameServiceServer() {}
 func (UnimplementedGameServiceServer) testEmbeddedByValue()                     {}
@@ -142,6 +192,60 @@ func _GameService_CompleteMission_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GameService_ProposeChallenge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProposeChallengeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GameServiceServer).ProposeChallenge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GameService_ProposeChallenge_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GameServiceServer).ProposeChallenge(ctx, req.(*ProposeChallengeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GameService_RespondChallenge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RespondChallengeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GameServiceServer).RespondChallenge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GameService_RespondChallenge_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GameServiceServer).RespondChallenge(ctx, req.(*RespondChallengeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GameService_GetChallenge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetChallengeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GameServiceServer).GetChallenge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GameService_GetChallenge_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GameServiceServer).GetChallenge(ctx, req.(*GetChallengeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GameService_ServiceDesc is the grpc.ServiceDesc for GameService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -156,6 +260,18 @@ var GameService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CompleteMission",
 			Handler:    _GameService_CompleteMission_Handler,
+		},
+		{
+			MethodName: "ProposeChallenge",
+			Handler:    _GameService_ProposeChallenge_Handler,
+		},
+		{
+			MethodName: "RespondChallenge",
+			Handler:    _GameService_RespondChallenge_Handler,
+		},
+		{
+			MethodName: "GetChallenge",
+			Handler:    _GameService_GetChallenge_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

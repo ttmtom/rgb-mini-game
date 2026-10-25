@@ -82,3 +82,32 @@ func (c *Client) SubmitMint(
 	}
 	return resp.GetTxHash(), balance, nil
 }
+
+// SubmitSignedTransfer forwards a pre-signed TRANSFER payload to the Ledger.
+// The caller (game service) is responsible for verifying the signature before calling this.
+func (c *Client) SubmitSignedTransfer(ctx context.Context, rawPayload, signature, senderPubKey []byte) (out.TransferResult, error) {
+	resp, err := c.grpc.SubmitTransaction(ctx, &pb.SubmitTransactionRequest{
+		RawPayload:   rawPayload,
+		Signature:    signature,
+		SenderPubKey: senderPubKey,
+	})
+	if err != nil {
+		return out.TransferResult{}, fmt.Errorf("ledger SubmitTransaction: %w", err)
+	}
+
+	result := out.TransferResult{
+		Success:      resp.GetSuccess(),
+		ErrorMessage: resp.GetErrorMessage(),
+		TxHash:       resp.GetTxHash(),
+	}
+	if b := resp.GetNewBalance(); b != nil {
+		result.NewBalance = &types.PlayerRecord{
+			ID:    b.GetPlayerId(),
+			Red:   b.GetRed(),
+			Green: b.GetGreen(),
+			Blue:  b.GetBlue(),
+			Nonce: b.GetNextNonce(),
+		}
+	}
+	return result, nil
+}

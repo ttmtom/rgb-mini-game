@@ -87,7 +87,10 @@ func main() {
 		fmt.Println("  6. Leaderboard")
 		fmt.Println("  7. Chain Stats")
 		fmt.Println("  8. Block Explorer")
-		fmt.Println("  9. Quit")
+		fmt.Println("  9. Propose Challenge")
+		fmt.Println(" 10. Respond to Challenge")
+		fmt.Println(" 11. View Challenge")
+		fmt.Println(" 12. Quit")
 		fmt.Print("Select option: ")
 
 		if !scanner.Scan() {
@@ -130,11 +133,20 @@ func main() {
 			doBlockExplorer(ledgerClient, scanner)
 
 		case "9":
+			doProposeChallenge(gameClient, ledgerClient, playerID, keypair, scanner)
+
+		case "10":
+			doRespondChallenge(gameClient, ledgerClient, playerID, keypair, scanner)
+
+		case "11":
+			doViewChallenge(gameClient, scanner)
+
+		case "12":
 			fmt.Println("Goodbye!")
 			return
 
 		default:
-			fmt.Println("Unknown option. Please enter 1–9.")
+			fmt.Println("Unknown option. Please enter 1–12.")
 		}
 	}
 }
@@ -464,6 +476,241 @@ func printBlock(b *pb.BlockInfo) {
 	for _, h := range b.GetTxHashes() {
 		fmt.Printf("    - %s\n", h)
 	}
+}
+
+// doProposeChallenge lets the player propose a token-swap challenge to another player.
+func doProposeChallenge(gameClient pb.GameServiceClient, ledgerClient pb.LedgerServiceClient,
+	playerID string, keypair *crypto.Keypair, scanner *bufio.Scanner) {
+
+	fmt.Print("Opponent player ID: ")
+	if !scanner.Scan() {
+		return
+	}
+	opponentID := strings.TrimSpace(scanner.Text())
+	if opponentID == "" {
+		fmt.Println("Opponent ID cannot be empty.")
+		return
+	}
+
+	fmt.Println("What you OFFER to the opponent:")
+	offerRed, ok := promptUint32(scanner, "  RED  : ")
+	if !ok {
+		return
+	}
+	offerGreen, ok := promptUint32(scanner, "  GREEN: ")
+	if !ok {
+		return
+	}
+	offerBlue, ok := promptUint32(scanner, "  BLUE : ")
+	if !ok {
+		return
+	}
+
+	fmt.Println("What you WANT from the opponent:")
+	wantRed, ok := promptUint32(scanner, "  RED  : ")
+	if !ok {
+		return
+	}
+	wantGreen, ok := promptUint32(scanner, "  GREEN: ")
+	if !ok {
+		return
+	}
+	wantBlue, ok := promptUint32(scanner, "  BLUE : ")
+	if !ok {
+		return
+	}
+
+	// Fetch current nonce.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	balResp, err := ledgerClient.GetBalance(ctx, &pb.GetBalanceRequest{PlayerId: playerID})
+	if err != nil {
+		fmt.Printf("Failed to fetch nonce: %v\n", err)
+		return
+	}
+
+	// Pre-sign the offer TRANSFER (proposer → opponent).
+	offerPayload := &pb.TransactionPayload{
+		Type:        pb.TransactionPayload_TRANSFER,
+		SenderId:    playerID,
+		ReceiverId:  opponentID,
+		AmountRed:   offerRed,
+		AmountGreen: offerGreen,
+		AmountBlue:  offerBlue,
+		Nonce:       balResp.GetNextNonce(),
+	}
+	rawOffer, err := proto.Marshal(offerPayload)
+	if err != nil {
+		fmt.Printf("Failed to marshal offer: %v\n", err)
+		return
+	}
+	sigOffer := crypto.Sign(keypair.PrivateKey, rawOffer)
+
+	ctx2, cancel2 := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel2()
+
+	resp, err := gameClient.ProposeChallenge(ctx2, &pb.ProposeChallengeRequest{
+		ProposerId:   playerID,
+		OpponentId:   opponentID,
+		OfferRed:     offerRed,
+		OfferGreen:   offerGreen,
+		OfferBlue:    offerBlue,
+		WantRed:      wantRed,
+		WantGreen:    wantGreen,
+		WantBlue:     wantBlue,
+		RawPayload:   rawOffer,
+		Signature:    sigOffer,
+		SenderPubKey: keypair.PublicKey,
+	})
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+	if resp.GetErrorMessage() != "" {
+		fmt.Printf("Challenge rejected: %s\n", resp.GetErrorMessage())
+		return
+	}
+	fmt.Printf("Challenge proposed! ID: %s\n", resp.GetChallengeId())
+	fmt.Printf("Share this ID with %s so they can respond.\n", opponentID)
+}
+
+// doRespondChallenge lets the player accept or decline a challenge.
+func doRespondChallenge(gameClient pb.GameServiceClient, ledgerClient pb.LedgerServiceClient,
+	playerID string, keypair *crypto.Keypair, scanner *bufio.Scanner) {
+
+	fmt.Print("Challenge ID: ")
+	if !scanner.Scan() {
+		return
+	}
+	challengeID := strings.TrimSpace(scanner.Text())
+	if challengeID == "" {
+		fmt.Println("Challenge ID cannot be empty.")
+		return
+	}
+
+	// First, view the challenge.
+	doViewChallengeByID(gameClient, challengeID)
+
+	fmt.Print("Accept? [y/N]: ")
+	if !scanner.Scan() {
+		return
+	}
+	accept := strings.ToLower(strings.TrimSpace(scanner.Text())) == "y"
+
+	if !accept {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		resp, err := gameClient.RespondChallenge(ctx, &pb.RespondChallengeRequest{
+			ChallengeId: challengeID,
+			PlayerId:    playerID,
+			Accept:      false,
+		})
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			return
+		}
+		if resp.GetSuccess() {
+			fmt.Println("Challenge declined.")
+		} else {
+			fmt.Printf("Error: %s\n", resp.GetErrorMessage())
+		}
+		return
+	}
+
+	// Get the challenge details to know what we owe.
+	ctx0, cancel0 := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel0()
+	challengeResp, err := gameClient.GetChallenge(ctx0, &pb.GetChallengeRequest{ChallengeId: challengeID})
+	if err != nil {
+		fmt.Printf("Error fetching challenge: %v\n", err)
+		return
+	}
+
+	// Fetch current nonce.
+	ctx1, cancel1 := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel1()
+	balResp, err := ledgerClient.GetBalance(ctx1, &pb.GetBalanceRequest{PlayerId: playerID})
+	if err != nil {
+		fmt.Printf("Failed to fetch nonce: %v\n", err)
+		return
+	}
+
+	// Pre-sign the want TRANSFER (opponent → proposer).
+	wantPayload := &pb.TransactionPayload{
+		Type:        pb.TransactionPayload_TRANSFER,
+		SenderId:    playerID,
+		ReceiverId:  challengeResp.GetProposerId(),
+		AmountRed:   challengeResp.GetWantRed(),
+		AmountGreen: challengeResp.GetWantGreen(),
+		AmountBlue:  challengeResp.GetWantBlue(),
+		Nonce:       balResp.GetNextNonce(),
+	}
+	rawWant, err := proto.Marshal(wantPayload)
+	if err != nil {
+		fmt.Printf("Failed to marshal response payload: %v\n", err)
+		return
+	}
+	sigWant := crypto.Sign(keypair.PrivateKey, rawWant)
+
+	ctx2, cancel2 := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel2()
+
+	resp, err := gameClient.RespondChallenge(ctx2, &pb.RespondChallengeRequest{
+		ChallengeId:  challengeID,
+		PlayerId:     playerID,
+		Accept:       true,
+		RawPayload:   rawWant,
+		Signature:    sigWant,
+		SenderPubKey: keypair.PublicKey,
+	})
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+	if !resp.GetSuccess() {
+		fmt.Printf("Challenge failed: %s\n", resp.GetErrorMessage())
+		return
+	}
+	fmt.Printf("Challenge completed!\n")
+	fmt.Printf("  Proposer TX: %s\n", resp.GetProposerTxHash())
+	fmt.Printf("  Opponent TX: %s\n", resp.GetOpponentTxHash())
+	if resp.GetNewBalance() != nil {
+		printBalance(resp.GetNewBalance())
+	}
+}
+
+// doViewChallenge lets the user look up a challenge by ID.
+func doViewChallenge(client pb.GameServiceClient, scanner *bufio.Scanner) {
+	fmt.Print("Challenge ID: ")
+	if !scanner.Scan() {
+		return
+	}
+	challengeID := strings.TrimSpace(scanner.Text())
+	doViewChallengeByID(client, challengeID)
+}
+
+func doViewChallengeByID(client pb.GameServiceClient, challengeID string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := client.GetChallenge(ctx, &pb.GetChallengeRequest{ChallengeId: challengeID})
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+	if resp.GetErrorMessage() != "" {
+		fmt.Printf("Challenge not found: %s\n", resp.GetErrorMessage())
+		return
+	}
+
+	fmt.Printf("Challenge : %s\n", resp.GetChallengeId())
+	fmt.Printf("  Proposer: %s\n", resp.GetProposerId())
+	fmt.Printf("  Opponent: %s\n", resp.GetOpponentId())
+	fmt.Printf("  Offer   : RED=%d GREEN=%d BLUE=%d\n", resp.GetOfferRed(), resp.GetOfferGreen(), resp.GetOfferBlue())
+	fmt.Printf("  Wants   : RED=%d GREEN=%d BLUE=%d\n", resp.GetWantRed(), resp.GetWantGreen(), resp.GetWantBlue())
+	fmt.Printf("  Status  : %s\n", resp.GetStatus().String())
+	fmt.Printf("  Expires : %s\n", time.Unix(resp.GetExpiresAt(), 0).Format(time.RFC3339))
 }
 
 // promptUint64 reads a line from the scanner, parses it as uint64.
