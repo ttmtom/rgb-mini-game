@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"rgb-game/internal/app/port/out"
+	"rgb-game/internal/domain/mission"
 	"rgb-game/internal/domain/types"
 	"rgb-game/pkg/logger"
 	"time"
@@ -51,19 +52,34 @@ func (s *missionService) requestMission(ctx context.Context, playerID string) (*
 		return nil, secs, nil
 	}
 
-	// Issue new mission (RewardColor: 0=Red, 1=Green, 2=Blue).
+	// Sample a random mission template from the pool.
+	tpl := mission.Pool[rand.Intn(len(mission.Pool))]
+	effectiveCooldown := time.Duration(int64(s.cooldown) * int64(tpl.Difficulty.CooldownMultiplier()))
+
 	record := &types.MissionRecord{
 		ID:          uuid.New().String(),
 		PlayerID:    playerID,
-		RewardColor: int32(rand.Intn(3)),
+		RewardColor: tpl.PrimaryColor,
 		IssuedAt:    time.Now().Unix(),
+		Difficulty:  int32(tpl.Difficulty),
+		RewardRed:   int32(tpl.Reward.R),
+		RewardGreen: int32(tpl.Reward.G),
+		RewardBlue:  int32(tpl.Reward.B),
 	}
-	if err := s.repo.Create(ctx, record, s.cooldown); err != nil {
+	if err := s.repo.Create(ctx, record, effectiveCooldown); err != nil {
 		return nil, 0, fmt.Errorf("store mission: %w", err)
 	}
 
-	logger.Infof("Issued mission %s to player %s (rewardColor=%d)", record.ID, playerID, record.RewardColor)
+	logger.Infof("Issued mission %s to player %s (difficulty=%d rewardColor=%d R=%d G=%d B=%d cooldown=%s)",
+		record.ID, playerID, record.Difficulty, record.RewardColor,
+		record.RewardRed, record.RewardGreen, record.RewardBlue, effectiveCooldown)
 	return record, 0, nil
+}
+
+// effectiveCooldown returns the cooldown duration for the given mission record.
+func (s *missionService) effectiveCooldown(record *types.MissionRecord) time.Duration {
+	multiplier := mission.Difficulty(record.Difficulty).CooldownMultiplier()
+	return time.Duration(int64(s.cooldown) * int64(multiplier))
 }
 
 // validateAndComplete verifies that the mission can be completed, marks it complete,
@@ -83,13 +99,14 @@ func (s *missionService) validateAndComplete(ctx context.Context, missionID, pla
 		return nil, fmt.Errorf("mission already completed")
 	}
 
+	cooldown := s.effectiveCooldown(record)
 	elapsed := time.Since(time.Unix(record.IssuedAt, 0))
-	if elapsed < s.cooldown {
-		remaining := int32((s.cooldown - elapsed).Seconds())
+	if elapsed < cooldown {
+		remaining := int32((cooldown - elapsed).Seconds())
 		return nil, fmt.Errorf("mission not yet ready, %ds remaining", remaining)
 	}
 
-	if err := s.repo.Complete(ctx, missionID, playerID, s.cooldown); err != nil {
+	if err := s.repo.Complete(ctx, missionID, playerID, cooldown); err != nil {
 		return nil, fmt.Errorf("complete mission: %w", err)
 	}
 

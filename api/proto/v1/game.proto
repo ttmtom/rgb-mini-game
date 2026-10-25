@@ -24,6 +24,12 @@ enum RewardColor {
   BLUE = 2;
 }
 
+enum MissionDifficulty {
+  EASY = 0;
+  MEDIUM = 1;
+  HARD = 2;
+}
+
 // =============================================================================
 // Message Definitions
 // =============================================================================
@@ -34,8 +40,12 @@ message RequestMissionRequest {
 
 message MissionResponse {
   string mission_id = 1;
-  RewardColor reward_color = 2;
+  RewardColor reward_color = 2;  // primary color (backward compat)
   int32 cooldown_seconds = 3;
+  MissionDifficulty difficulty = 4;
+  int32 reward_red = 5;
+  int32 reward_green = 6;
+  int32 reward_blue = 7;
 }
 
 message CompleteMissionRequest {

@@ -28,6 +28,10 @@ func (h *Handler) RequestMission(ctx context.Context, req *pb.RequestMissionRequ
 		MissionId:       result.MissionID,
 		RewardColor:     pb.RewardColor(result.RewardColor),
 		CooldownSeconds: result.CooldownSeconds,
+		Difficulty:      pb.MissionDifficulty(result.Difficulty),
+		RewardRed:       result.RewardRed,
+		RewardGreen:     result.RewardGreen,
+		RewardBlue:      result.RewardBlue,
 	}, nil
 }
 

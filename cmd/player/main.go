@@ -161,7 +161,9 @@ func doRequestMission(client pb.GameServiceClient, playerID string, scanner *buf
 	}
 
 	fmt.Printf("Mission ID    : %s\n", resp.GetMissionId())
-	fmt.Printf("Reward Color  : %s\n", resp.GetRewardColor().String())
+	fmt.Printf("Difficulty    : %s\n", resp.GetDifficulty().String())
+	fmt.Printf("Reward        : RED+%d  GREEN+%d  BLUE+%d\n",
+		resp.GetRewardRed(), resp.GetRewardGreen(), resp.GetRewardBlue())
 	fmt.Printf("Cooldown      : %d seconds\n", resp.GetCooldownSeconds())
 
 	cooldown := int(resp.GetCooldownSeconds())

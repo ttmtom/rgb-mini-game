@@ -15,4 +15,10 @@ type MissionRecord struct {
 	IssuedAt    int64  `json:"issued_at"` // unix timestamp
 	RewardColor int32  `json:"reward_color"`
 	Completed   bool   `json:"completed"`
+	// Difficulty: 0=Easy, 1=Medium, 2=Hard
+	Difficulty int32 `json:"difficulty"`
+	// Reward deltas per channel (signed, clamped by engine to [0,255]).
+	RewardRed   int32 `json:"reward_red"`
+	RewardGreen int32 `json:"reward_green"`
+	RewardBlue  int32 `json:"reward_blue"`
 }

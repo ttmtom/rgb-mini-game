@@ -54,10 +54,15 @@ func (s *GameService) RequestMission(ctx context.Context, playerID string) (in.R
 		return in.RequestMissionResult{CooldownSeconds: cooldownRemaining}, nil
 	}
 
+	effectiveCooldown := s.missionSvc.effectiveCooldown(record)
 	return in.RequestMissionResult{
 		MissionID:       record.ID,
 		RewardColor:     enum.Color(record.RewardColor),
-		CooldownSeconds: int32(s.cfg.MissionCooldown.Seconds()),
+		CooldownSeconds: int32(effectiveCooldown.Seconds()),
+		Difficulty:      record.Difficulty,
+		RewardRed:       record.RewardRed,
+		RewardGreen:     record.RewardGreen,
+		RewardBlue:      record.RewardBlue,
 	}, nil
 }
 
@@ -71,23 +76,11 @@ func (s *GameService) CompleteMission(ctx context.Context, missionID, playerID s
 		return in.CompleteMissionResult{Success: false, ErrorMessage: err.Error()}, nil
 	}
 
-	// Determine reward amounts from color.
-	var amtRed, amtGreen, amtBlue uint32
-	switch enum.Color(record.RewardColor) {
-	case enum.Red:
-		amtRed = 1
-	case enum.Green:
-		amtGreen = 1
-	case enum.Blue:
-		amtBlue = 1
-	}
-
 	// Serialise MINT submissions so concurrent CompleteMission calls don't
 	// race for the same authority nonce.
 	s.mintMu.Lock()
 	defer s.mintMu.Unlock()
 
-	// Fetch authority's current nonce from the Ledger.
 	nonce, err := s.ledgerClient.GetAuthorityNonce(ctx, s.auth.PlayerID())
 	if err != nil {
 		return in.CompleteMissionResult{
@@ -99,14 +92,15 @@ func (s *GameService) CompleteMission(ctx context.Context, missionID, playerID s
 	txHash, newBalance, err := s.ledgerClient.SubmitMint(
 		ctx, s.auth,
 		s.auth.PlayerID(), playerID,
-		amtRed, amtGreen, amtBlue,
+		uint32(record.RewardRed), uint32(record.RewardGreen), uint32(record.RewardBlue),
 		nonce,
 	)
 	if err != nil {
 		return in.CompleteMissionResult{Success: false, ErrorMessage: err.Error()}, nil
 	}
 
-	logger.Infof("Mission %s completed, tx=%s", missionID, txHash)
+	logger.Infof("Mission %s completed, tx=%s (R=%d G=%d B=%d)", missionID, txHash,
+		record.RewardRed, record.RewardGreen, record.RewardBlue)
 	return in.CompleteMissionResult{
 		Success:    true,
 		TxHash:     txHash,

@@ -12,6 +12,10 @@ type RequestMissionResult struct {
 	MissionID       string
 	RewardColor     enum.Color
 	CooldownSeconds int32
+	Difficulty      int32 // 0=Easy, 1=Medium, 2=Hard
+	RewardRed       int32
+	RewardGreen     int32
+	RewardBlue      int32
 }
 
 // CompleteMissionResult is returned after a CompleteMission attempt.
