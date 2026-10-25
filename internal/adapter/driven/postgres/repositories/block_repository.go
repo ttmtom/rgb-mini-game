@@ -135,3 +135,23 @@ func (r *BlockRepository) TransactionHashesByBlock(ctx context.Context, blockHei
 	}
 	return hashes, nil
 }
+
+// CountBlocks returns the total number of sealed blocks.
+func (r *BlockRepository) CountBlocks(ctx context.Context) (uint64, error) {
+	db := dbFromContext(ctx, r.db)
+	var count int64
+	if err := db.Model(&blockModel{}).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return uint64(count), nil
+}
+
+// CountPending returns the number of transactions not yet sealed into a block.
+func (r *BlockRepository) CountPending(ctx context.Context) (uint64, error) {
+	db := dbFromContext(ctx, r.db)
+	var count int64
+	if err := db.Model(&transactionModel{}).Where("block_height IS NULL").Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return uint64(count), nil
+}

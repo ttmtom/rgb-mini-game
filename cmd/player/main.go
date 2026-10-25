@@ -84,7 +84,8 @@ func main() {
 		fmt.Println("  3. Complete Mission")
 		fmt.Println("  4. Transfer")
 		fmt.Println("  5. Transaction History")
-		fmt.Println("  6. Quit")
+		fmt.Println("  6. Chain Stats")
+		fmt.Println("  7. Quit")
 		fmt.Print("Select option: ")
 
 		if !scanner.Scan() {
@@ -118,11 +119,14 @@ func main() {
 			doTxHistory(ledgerClient, playerID, scanner)
 
 		case "6":
+			doChainStats(ledgerClient)
+
+		case "7":
 			fmt.Println("Goodbye!")
 			return
 
 		default:
-			fmt.Println("Unknown option. Please enter 1–6.")
+			fmt.Println("Unknown option. Please enter 1–7.")
 		}
 	}
 }
@@ -335,4 +339,25 @@ func doTxHistory(client pb.LedgerServiceClient, playerID string, scanner *bufio.
 			t.GetSenderId()[:12]+"...", t.GetReceiverId()[:12]+"...",
 			blockStr)
 	}
+}
+
+// doChainStats fetches and prints chain statistics.
+func doChainStats(client pb.LedgerServiceClient) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := client.GetChainStats(ctx, &pb.GetChainStatsRequest{})
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
+	fmt.Println("Chain Statistics")
+	fmt.Println(strings.Repeat("-", 40))
+	fmt.Printf("Chain Height    : %d\n", resp.GetChainHeight())
+	fmt.Printf("Last Block Hash : %s\n", resp.GetLastBlockHash())
+	fmt.Printf("Last Block Time : %s\n", time.Unix(resp.GetLastBlockTimestamp(), 0).Format(time.RFC3339))
+	fmt.Printf("Pending TXs     : %d\n", resp.GetPendingTxCount())
+	fmt.Printf("Total TXs       : %d\n", resp.GetTotalTxCount())
+	fmt.Printf("Total Players   : %d\n", resp.GetTotalPlayers())
 }

@@ -191,3 +191,19 @@ func (h *Handler) GetTransactionHistory(ctx context.Context, req *pb.GetTransact
 	}
 	return &pb.TransactionHistoryResponse{Transactions: entries, Total: result.Total}, nil
 }
+
+// GetChainStats implements pb.LedgerServiceServer.
+func (h *Handler) GetChainStats(ctx context.Context, _ *pb.GetChainStatsRequest) (*pb.ChainStatsResponse, error) {
+	stats, err := h.ledger.GetChainStats(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ChainStatsResponse{
+		ChainHeight:        stats.ChainHeight,
+		PendingTxCount:     stats.PendingTxCount,
+		TotalTxCount:       stats.TotalTxCount,
+		LastBlockHash:      stats.LastBlockHash,
+		LastBlockTimestamp: stats.LastBlockTimestamp,
+		TotalPlayers:       stats.TotalPlayers,
+	}, nil
+}

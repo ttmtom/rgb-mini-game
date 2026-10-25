@@ -19,6 +19,9 @@ type PlayerRepository interface {
 
 	// UpdateBalance persists the updated player record.
 	UpdateBalance(ctx context.Context, player *types.PlayerRecord) error
+
+	// Count returns the total number of player records.
+	Count(ctx context.Context) (uint64, error)
 }
 
 // TransactionRepository defines the persistence contract for ledger transactions.

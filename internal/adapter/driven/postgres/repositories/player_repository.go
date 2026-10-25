@@ -79,3 +79,13 @@ func (r *PlayerRepository) UpdateBalance(ctx context.Context, player *types.Play
 	db := dbFromContext(ctx, r.db)
 	return db.Save(fromPlayerRecord(player)).Error
 }
+
+// Count returns the total number of player records.
+func (r *PlayerRepository) Count(ctx context.Context) (uint64, error) {
+	db := dbFromContext(ctx, r.db)
+	var count int64
+	if err := db.Model(&playerModel{}).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return uint64(count), nil
+}

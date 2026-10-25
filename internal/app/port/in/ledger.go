@@ -78,6 +78,16 @@ type TransactionHistoryResult struct {
 	Total        uint64
 }
 
+// ChainStatsResult holds aggregate chain statistics.
+type ChainStatsResult struct {
+	ChainHeight        uint64
+	PendingTxCount     uint64
+	TotalTxCount       uint64
+	LastBlockHash      string
+	LastBlockTimestamp int64
+	TotalPlayers       uint64
+}
+
 // LedgerUseCase defines the application operations exposed by the Ledger service.
 type LedgerUseCase interface {
 	// GetBalance returns the player record (R/G/B + nonce), or nil if not found.
@@ -96,4 +106,7 @@ type LedgerUseCase interface {
 
 	// GetTransactionHistory returns paginated transaction history for a player.
 	GetTransactionHistory(ctx context.Context, req TransactionHistoryRequest) (TransactionHistoryResult, error)
+
+	// GetChainStats returns aggregate chain and network statistics.
+	GetChainStats(ctx context.Context) (ChainStatsResult, error)
 }

@@ -759,6 +759,126 @@ func (x *TransactionHistoryResponse) GetTotal() uint64 {
 	return 0
 }
 
+type GetChainStatsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetChainStatsRequest) Reset() {
+	*x = GetChainStatsRequest{}
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetChainStatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetChainStatsRequest) ProtoMessage() {}
+
+func (x *GetChainStatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetChainStatsRequest.ProtoReflect.Descriptor instead.
+func (*GetChainStatsRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{10}
+}
+
+type ChainStatsResponse struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	ChainHeight        uint64                 `protobuf:"varint,1,opt,name=chain_height,json=chainHeight,proto3" json:"chain_height,omitempty"`
+	PendingTxCount     uint64                 `protobuf:"varint,2,opt,name=pending_tx_count,json=pendingTxCount,proto3" json:"pending_tx_count,omitempty"`
+	TotalTxCount       uint64                 `protobuf:"varint,3,opt,name=total_tx_count,json=totalTxCount,proto3" json:"total_tx_count,omitempty"`
+	LastBlockHash      string                 `protobuf:"bytes,4,opt,name=last_block_hash,json=lastBlockHash,proto3" json:"last_block_hash,omitempty"`
+	LastBlockTimestamp int64                  `protobuf:"varint,5,opt,name=last_block_timestamp,json=lastBlockTimestamp,proto3" json:"last_block_timestamp,omitempty"`
+	TotalPlayers       uint64                 `protobuf:"varint,6,opt,name=total_players,json=totalPlayers,proto3" json:"total_players,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *ChainStatsResponse) Reset() {
+	*x = ChainStatsResponse{}
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChainStatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChainStatsResponse) ProtoMessage() {}
+
+func (x *ChainStatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChainStatsResponse.ProtoReflect.Descriptor instead.
+func (*ChainStatsResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ChainStatsResponse) GetChainHeight() uint64 {
+	if x != nil {
+		return x.ChainHeight
+	}
+	return 0
+}
+
+func (x *ChainStatsResponse) GetPendingTxCount() uint64 {
+	if x != nil {
+		return x.PendingTxCount
+	}
+	return 0
+}
+
+func (x *ChainStatsResponse) GetTotalTxCount() uint64 {
+	if x != nil {
+		return x.TotalTxCount
+	}
+	return 0
+}
+
+func (x *ChainStatsResponse) GetLastBlockHash() string {
+	if x != nil {
+		return x.LastBlockHash
+	}
+	return ""
+}
+
+func (x *ChainStatsResponse) GetLastBlockTimestamp() int64 {
+	if x != nil {
+		return x.LastBlockTimestamp
+	}
+	return 0
+}
+
+func (x *ChainStatsResponse) GetTotalPlayers() uint64 {
+	if x != nil {
+		return x.TotalPlayers
+	}
+	return 0
+}
+
 var File_api_proto_v1_ledger_proto protoreflect.FileDescriptor
 
 const file_api_proto_v1_ledger_proto_rawDesc = "" +
@@ -824,13 +944,22 @@ const file_api_proto_v1_ledger_proto_rawDesc = "" +
 	" \x01(\x12R\vblockHeight\"w\n" +
 	"\x1aTransactionHistoryResponse\x12C\n" +
 	"\ftransactions\x18\x01 \x03(\v2\x1f.rgb.ledger.v1.TransactionEntryR\ftransactions\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x04R\x05total2\xa8\x03\n" +
+	"\x05total\x18\x02 \x01(\x04R\x05total\"\x16\n" +
+	"\x14GetChainStatsRequest\"\x86\x02\n" +
+	"\x12ChainStatsResponse\x12!\n" +
+	"\fchain_height\x18\x01 \x01(\x04R\vchainHeight\x12(\n" +
+	"\x10pending_tx_count\x18\x02 \x01(\x04R\x0ependingTxCount\x12$\n" +
+	"\x0etotal_tx_count\x18\x03 \x01(\x04R\ftotalTxCount\x12&\n" +
+	"\x0flast_block_hash\x18\x04 \x01(\tR\rlastBlockHash\x120\n" +
+	"\x14last_block_timestamp\x18\x05 \x01(\x03R\x12lastBlockTimestamp\x12#\n" +
+	"\rtotal_players\x18\x06 \x01(\x04R\ftotalPlayers2\x83\x04\n" +
 	"\rLedgerService\x12P\n" +
 	"\n" +
 	"GetBalance\x12 .rgb.ledger.v1.GetBalanceRequest\x1a\x1e.rgb.ledger.v1.BalanceResponse\"\x00\x12h\n" +
 	"\x11SubmitTransaction\x12'.rgb.ledger.v1.SubmitTransactionRequest\x1a(.rgb.ledger.v1.SubmitTransactionResponse\"\x00\x12h\n" +
 	"\x11RegisterAuthority\x12'.rgb.ledger.v1.RegisterAuthorityRequest\x1a(.rgb.ledger.v1.RegisterAuthorityResponse\"\x00\x12q\n" +
-	"\x15GetTransactionHistory\x12+.rgb.ledger.v1.GetTransactionHistoryRequest\x1a).rgb.ledger.v1.TransactionHistoryResponse\"\x00B\n" +
+	"\x15GetTransactionHistory\x12+.rgb.ledger.v1.GetTransactionHistoryRequest\x1a).rgb.ledger.v1.TransactionHistoryResponse\"\x00\x12Y\n" +
+	"\rGetChainStats\x12#.rgb.ledger.v1.GetChainStatsRequest\x1a!.rgb.ledger.v1.ChainStatsResponse\"\x00B\n" +
 	"Z\b./pkg/pbb\x06proto3"
 
 var (
@@ -846,7 +975,7 @@ func file_api_proto_v1_ledger_proto_rawDescGZIP() []byte {
 }
 
 var file_api_proto_v1_ledger_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_api_proto_v1_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_api_proto_v1_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_api_proto_v1_ledger_proto_goTypes = []any{
 	(TransactionPayload_TxType)(0),       // 0: rgb.ledger.v1.TransactionPayload.TxType
 	(*GetBalanceRequest)(nil),            // 1: rgb.ledger.v1.GetBalanceRequest
@@ -859,6 +988,8 @@ var file_api_proto_v1_ledger_proto_goTypes = []any{
 	(*GetTransactionHistoryRequest)(nil), // 8: rgb.ledger.v1.GetTransactionHistoryRequest
 	(*TransactionEntry)(nil),             // 9: rgb.ledger.v1.TransactionEntry
 	(*TransactionHistoryResponse)(nil),   // 10: rgb.ledger.v1.TransactionHistoryResponse
+	(*GetChainStatsRequest)(nil),         // 11: rgb.ledger.v1.GetChainStatsRequest
+	(*ChainStatsResponse)(nil),           // 12: rgb.ledger.v1.ChainStatsResponse
 }
 var file_api_proto_v1_ledger_proto_depIdxs = []int32{
 	0,  // 0: rgb.ledger.v1.TransactionPayload.type:type_name -> rgb.ledger.v1.TransactionPayload.TxType
@@ -868,12 +999,14 @@ var file_api_proto_v1_ledger_proto_depIdxs = []int32{
 	3,  // 4: rgb.ledger.v1.LedgerService.SubmitTransaction:input_type -> rgb.ledger.v1.SubmitTransactionRequest
 	6,  // 5: rgb.ledger.v1.LedgerService.RegisterAuthority:input_type -> rgb.ledger.v1.RegisterAuthorityRequest
 	8,  // 6: rgb.ledger.v1.LedgerService.GetTransactionHistory:input_type -> rgb.ledger.v1.GetTransactionHistoryRequest
-	2,  // 7: rgb.ledger.v1.LedgerService.GetBalance:output_type -> rgb.ledger.v1.BalanceResponse
-	5,  // 8: rgb.ledger.v1.LedgerService.SubmitTransaction:output_type -> rgb.ledger.v1.SubmitTransactionResponse
-	7,  // 9: rgb.ledger.v1.LedgerService.RegisterAuthority:output_type -> rgb.ledger.v1.RegisterAuthorityResponse
-	10, // 10: rgb.ledger.v1.LedgerService.GetTransactionHistory:output_type -> rgb.ledger.v1.TransactionHistoryResponse
-	7,  // [7:11] is the sub-list for method output_type
-	3,  // [3:7] is the sub-list for method input_type
+	11, // 7: rgb.ledger.v1.LedgerService.GetChainStats:input_type -> rgb.ledger.v1.GetChainStatsRequest
+	2,  // 8: rgb.ledger.v1.LedgerService.GetBalance:output_type -> rgb.ledger.v1.BalanceResponse
+	5,  // 9: rgb.ledger.v1.LedgerService.SubmitTransaction:output_type -> rgb.ledger.v1.SubmitTransactionResponse
+	7,  // 10: rgb.ledger.v1.LedgerService.RegisterAuthority:output_type -> rgb.ledger.v1.RegisterAuthorityResponse
+	10, // 11: rgb.ledger.v1.LedgerService.GetTransactionHistory:output_type -> rgb.ledger.v1.TransactionHistoryResponse
+	12, // 12: rgb.ledger.v1.LedgerService.GetChainStats:output_type -> rgb.ledger.v1.ChainStatsResponse
+	8,  // [8:13] is the sub-list for method output_type
+	3,  // [3:8] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
 	3,  // [3:3] is the sub-list for extension extendee
 	0,  // [0:3] is the sub-list for field type_name
@@ -890,7 +1023,7 @@ func file_api_proto_v1_ledger_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_v1_ledger_proto_rawDesc), len(file_api_proto_v1_ledger_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

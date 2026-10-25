@@ -279,3 +279,38 @@ func (s *LedgerService) GetTransactionHistory(ctx context.Context, req in.Transa
 	}
 	return in.TransactionHistoryResult{Transactions: entries, Total: total}, nil
 }
+
+// GetChainStats returns aggregate chain and network statistics.
+func (s *LedgerService) GetChainStats(ctx context.Context) (in.ChainStatsResult, error) {
+	latest, err := s.blockRepo.LatestBlock(ctx)
+	if err != nil {
+		return in.ChainStatsResult{}, fmt.Errorf("fetch latest block: %w", err)
+	}
+
+	pendingCount, err := s.blockRepo.CountPending(ctx)
+	if err != nil {
+		return in.ChainStatsResult{}, fmt.Errorf("count pending txs: %w", err)
+	}
+
+	totalTxCount, err := s.txRepo.CountAll(ctx)
+	if err != nil {
+		return in.ChainStatsResult{}, fmt.Errorf("count total txs: %w", err)
+	}
+
+	totalPlayers, err := s.playerRepo.Count(ctx)
+	if err != nil {
+		return in.ChainStatsResult{}, fmt.Errorf("count players: %w", err)
+	}
+
+	result := in.ChainStatsResult{
+		PendingTxCount: pendingCount,
+		TotalTxCount:   totalTxCount,
+		TotalPlayers:   totalPlayers,
+	}
+	if latest != nil {
+		result.ChainHeight = latest.Height
+		result.LastBlockHash = latest.Hash
+		result.LastBlockTimestamp = latest.Timestamp
+	}
+	return result, nil
+}
