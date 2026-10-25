@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"rgb-game/internal/app/port/in"
 	"rgb-game/internal/app/port/out"
+	"rgb-game/internal/domain/types"
 	"rgb-game/pkg/crypto"
 	"rgb-game/pkg/logger"
 	"rgb-game/pkg/pb"
@@ -206,4 +207,43 @@ func (h *Handler) GetChainStats(ctx context.Context, _ *pb.GetChainStatsRequest)
 		LastBlockTimestamp: stats.LastBlockTimestamp,
 		TotalPlayers:       stats.TotalPlayers,
 	}, nil
+}
+
+// GetBlock implements pb.LedgerServiceServer.
+func (h *Handler) GetBlock(ctx context.Context, req *pb.GetBlockRequest) (*pb.BlockResponse, error) {
+	result, err := h.ledger.GetBlock(ctx, req.GetHeight())
+	if err != nil {
+		return nil, err
+	}
+	if !result.Found {
+		return &pb.BlockResponse{Found: false}, nil
+	}
+	return &pb.BlockResponse{Found: true, Block: blockToProto(result.Block, result.TxHashes)}, nil
+}
+
+// ListBlocks implements pb.LedgerServiceServer.
+func (h *Handler) ListBlocks(ctx context.Context, req *pb.ListBlocksRequest) (*pb.ListBlocksResponse, error) {
+	result, err := h.ledger.ListBlocks(ctx, req.GetPage(), req.GetPageSize())
+	if err != nil {
+		return nil, err
+	}
+	blocks := make([]*pb.BlockInfo, len(result.Blocks))
+	for i, entry := range result.Blocks {
+		blocks[i] = blockToProto(entry.Block, entry.TxHashes)
+	}
+	return &pb.ListBlocksResponse{Blocks: blocks, TotalBlocks: result.TotalBlocks}, nil
+}
+
+// blockToProto converts a domain Block + tx hashes to the proto BlockInfo message.
+func blockToProto(b *types.Block, txHashes []string) *pb.BlockInfo {
+	return &pb.BlockInfo{
+		Height:     b.Height,
+		Hash:       b.Hash,
+		PrevHash:   b.PrevHash,
+		MerkleRoot: b.MerkleRoot,
+		Timestamp:  b.Timestamp,
+		Nonce:      b.Nonce,
+		Difficulty: uint32(b.Difficulty),
+		TxHashes:   txHashes,
+	}
 }

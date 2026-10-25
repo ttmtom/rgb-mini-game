@@ -879,6 +879,306 @@ func (x *ChainStatsResponse) GetTotalPlayers() uint64 {
 	return 0
 }
 
+type GetBlockRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Height        uint64                 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBlockRequest) Reset() {
+	*x = GetBlockRequest{}
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBlockRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBlockRequest) ProtoMessage() {}
+
+func (x *GetBlockRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBlockRequest.ProtoReflect.Descriptor instead.
+func (*GetBlockRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GetBlockRequest) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+type BlockInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Height        uint64                 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
+	Hash          string                 `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
+	PrevHash      string                 `protobuf:"bytes,3,opt,name=prev_hash,json=prevHash,proto3" json:"prev_hash,omitempty"`
+	MerkleRoot    string                 `protobuf:"bytes,4,opt,name=merkle_root,json=merkleRoot,proto3" json:"merkle_root,omitempty"`
+	Timestamp     int64                  `protobuf:"varint,5,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Nonce         uint64                 `protobuf:"varint,6,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	Difficulty    uint32                 `protobuf:"varint,7,opt,name=difficulty,proto3" json:"difficulty,omitempty"`
+	TxHashes      []string               `protobuf:"bytes,8,rep,name=tx_hashes,json=txHashes,proto3" json:"tx_hashes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockInfo) Reset() {
+	*x = BlockInfo{}
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockInfo) ProtoMessage() {}
+
+func (x *BlockInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockInfo.ProtoReflect.Descriptor instead.
+func (*BlockInfo) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *BlockInfo) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *BlockInfo) GetHash() string {
+	if x != nil {
+		return x.Hash
+	}
+	return ""
+}
+
+func (x *BlockInfo) GetPrevHash() string {
+	if x != nil {
+		return x.PrevHash
+	}
+	return ""
+}
+
+func (x *BlockInfo) GetMerkleRoot() string {
+	if x != nil {
+		return x.MerkleRoot
+	}
+	return ""
+}
+
+func (x *BlockInfo) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
+	}
+	return 0
+}
+
+func (x *BlockInfo) GetNonce() uint64 {
+	if x != nil {
+		return x.Nonce
+	}
+	return 0
+}
+
+func (x *BlockInfo) GetDifficulty() uint32 {
+	if x != nil {
+		return x.Difficulty
+	}
+	return 0
+}
+
+func (x *BlockInfo) GetTxHashes() []string {
+	if x != nil {
+		return x.TxHashes
+	}
+	return nil
+}
+
+type BlockResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Found         bool                   `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
+	Block         *BlockInfo             `protobuf:"bytes,2,opt,name=block,proto3" json:"block,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockResponse) Reset() {
+	*x = BlockResponse{}
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockResponse) ProtoMessage() {}
+
+func (x *BlockResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockResponse.ProtoReflect.Descriptor instead.
+func (*BlockResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *BlockResponse) GetFound() bool {
+	if x != nil {
+		return x.Found
+	}
+	return false
+}
+
+func (x *BlockResponse) GetBlock() *BlockInfo {
+	if x != nil {
+		return x.Block
+	}
+	return nil
+}
+
+type ListBlocksRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Page          uint32                 `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`                         // 0-indexed
+	PageSize      uint32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"` // max 50; 0 defaults to 10
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListBlocksRequest) Reset() {
+	*x = ListBlocksRequest{}
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListBlocksRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListBlocksRequest) ProtoMessage() {}
+
+func (x *ListBlocksRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListBlocksRequest.ProtoReflect.Descriptor instead.
+func (*ListBlocksRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ListBlocksRequest) GetPage() uint32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListBlocksRequest) GetPageSize() uint32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type ListBlocksResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Blocks        []*BlockInfo           `protobuf:"bytes,1,rep,name=blocks,proto3" json:"blocks,omitempty"`
+	TotalBlocks   uint64                 `protobuf:"varint,2,opt,name=total_blocks,json=totalBlocks,proto3" json:"total_blocks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListBlocksResponse) Reset() {
+	*x = ListBlocksResponse{}
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListBlocksResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListBlocksResponse) ProtoMessage() {}
+
+func (x *ListBlocksResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListBlocksResponse.ProtoReflect.Descriptor instead.
+func (*ListBlocksResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ListBlocksResponse) GetBlocks() []*BlockInfo {
+	if x != nil {
+		return x.Blocks
+	}
+	return nil
+}
+
+func (x *ListBlocksResponse) GetTotalBlocks() uint64 {
+	if x != nil {
+		return x.TotalBlocks
+	}
+	return 0
+}
+
 var File_api_proto_v1_ledger_proto protoreflect.FileDescriptor
 
 const file_api_proto_v1_ledger_proto_rawDesc = "" +
@@ -952,14 +1252,40 @@ const file_api_proto_v1_ledger_proto_rawDesc = "" +
 	"\x0etotal_tx_count\x18\x03 \x01(\x04R\ftotalTxCount\x12&\n" +
 	"\x0flast_block_hash\x18\x04 \x01(\tR\rlastBlockHash\x120\n" +
 	"\x14last_block_timestamp\x18\x05 \x01(\x03R\x12lastBlockTimestamp\x12#\n" +
-	"\rtotal_players\x18\x06 \x01(\x04R\ftotalPlayers2\x83\x04\n" +
+	"\rtotal_players\x18\x06 \x01(\x04R\ftotalPlayers\")\n" +
+	"\x0fGetBlockRequest\x12\x16\n" +
+	"\x06height\x18\x01 \x01(\x04R\x06height\"\xe6\x01\n" +
+	"\tBlockInfo\x12\x16\n" +
+	"\x06height\x18\x01 \x01(\x04R\x06height\x12\x12\n" +
+	"\x04hash\x18\x02 \x01(\tR\x04hash\x12\x1b\n" +
+	"\tprev_hash\x18\x03 \x01(\tR\bprevHash\x12\x1f\n" +
+	"\vmerkle_root\x18\x04 \x01(\tR\n" +
+	"merkleRoot\x12\x1c\n" +
+	"\ttimestamp\x18\x05 \x01(\x03R\ttimestamp\x12\x14\n" +
+	"\x05nonce\x18\x06 \x01(\x04R\x05nonce\x12\x1e\n" +
+	"\n" +
+	"difficulty\x18\a \x01(\rR\n" +
+	"difficulty\x12\x1b\n" +
+	"\ttx_hashes\x18\b \x03(\tR\btxHashes\"U\n" +
+	"\rBlockResponse\x12\x14\n" +
+	"\x05found\x18\x01 \x01(\bR\x05found\x12.\n" +
+	"\x05block\x18\x02 \x01(\v2\x18.rgb.ledger.v1.BlockInfoR\x05block\"D\n" +
+	"\x11ListBlocksRequest\x12\x12\n" +
+	"\x04page\x18\x01 \x01(\rR\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\rR\bpageSize\"i\n" +
+	"\x12ListBlocksResponse\x120\n" +
+	"\x06blocks\x18\x01 \x03(\v2\x18.rgb.ledger.v1.BlockInfoR\x06blocks\x12!\n" +
+	"\ftotal_blocks\x18\x02 \x01(\x04R\vtotalBlocks2\xa4\x05\n" +
 	"\rLedgerService\x12P\n" +
 	"\n" +
 	"GetBalance\x12 .rgb.ledger.v1.GetBalanceRequest\x1a\x1e.rgb.ledger.v1.BalanceResponse\"\x00\x12h\n" +
 	"\x11SubmitTransaction\x12'.rgb.ledger.v1.SubmitTransactionRequest\x1a(.rgb.ledger.v1.SubmitTransactionResponse\"\x00\x12h\n" +
 	"\x11RegisterAuthority\x12'.rgb.ledger.v1.RegisterAuthorityRequest\x1a(.rgb.ledger.v1.RegisterAuthorityResponse\"\x00\x12q\n" +
 	"\x15GetTransactionHistory\x12+.rgb.ledger.v1.GetTransactionHistoryRequest\x1a).rgb.ledger.v1.TransactionHistoryResponse\"\x00\x12Y\n" +
-	"\rGetChainStats\x12#.rgb.ledger.v1.GetChainStatsRequest\x1a!.rgb.ledger.v1.ChainStatsResponse\"\x00B\n" +
+	"\rGetChainStats\x12#.rgb.ledger.v1.GetChainStatsRequest\x1a!.rgb.ledger.v1.ChainStatsResponse\"\x00\x12J\n" +
+	"\bGetBlock\x12\x1e.rgb.ledger.v1.GetBlockRequest\x1a\x1c.rgb.ledger.v1.BlockResponse\"\x00\x12S\n" +
+	"\n" +
+	"ListBlocks\x12 .rgb.ledger.v1.ListBlocksRequest\x1a!.rgb.ledger.v1.ListBlocksResponse\"\x00B\n" +
 	"Z\b./pkg/pbb\x06proto3"
 
 var (
@@ -975,7 +1301,7 @@ func file_api_proto_v1_ledger_proto_rawDescGZIP() []byte {
 }
 
 var file_api_proto_v1_ledger_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_api_proto_v1_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_api_proto_v1_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_api_proto_v1_ledger_proto_goTypes = []any{
 	(TransactionPayload_TxType)(0),       // 0: rgb.ledger.v1.TransactionPayload.TxType
 	(*GetBalanceRequest)(nil),            // 1: rgb.ledger.v1.GetBalanceRequest
@@ -990,26 +1316,37 @@ var file_api_proto_v1_ledger_proto_goTypes = []any{
 	(*TransactionHistoryResponse)(nil),   // 10: rgb.ledger.v1.TransactionHistoryResponse
 	(*GetChainStatsRequest)(nil),         // 11: rgb.ledger.v1.GetChainStatsRequest
 	(*ChainStatsResponse)(nil),           // 12: rgb.ledger.v1.ChainStatsResponse
+	(*GetBlockRequest)(nil),              // 13: rgb.ledger.v1.GetBlockRequest
+	(*BlockInfo)(nil),                    // 14: rgb.ledger.v1.BlockInfo
+	(*BlockResponse)(nil),                // 15: rgb.ledger.v1.BlockResponse
+	(*ListBlocksRequest)(nil),            // 16: rgb.ledger.v1.ListBlocksRequest
+	(*ListBlocksResponse)(nil),           // 17: rgb.ledger.v1.ListBlocksResponse
 }
 var file_api_proto_v1_ledger_proto_depIdxs = []int32{
 	0,  // 0: rgb.ledger.v1.TransactionPayload.type:type_name -> rgb.ledger.v1.TransactionPayload.TxType
 	2,  // 1: rgb.ledger.v1.SubmitTransactionResponse.new_balance:type_name -> rgb.ledger.v1.BalanceResponse
 	9,  // 2: rgb.ledger.v1.TransactionHistoryResponse.transactions:type_name -> rgb.ledger.v1.TransactionEntry
-	1,  // 3: rgb.ledger.v1.LedgerService.GetBalance:input_type -> rgb.ledger.v1.GetBalanceRequest
-	3,  // 4: rgb.ledger.v1.LedgerService.SubmitTransaction:input_type -> rgb.ledger.v1.SubmitTransactionRequest
-	6,  // 5: rgb.ledger.v1.LedgerService.RegisterAuthority:input_type -> rgb.ledger.v1.RegisterAuthorityRequest
-	8,  // 6: rgb.ledger.v1.LedgerService.GetTransactionHistory:input_type -> rgb.ledger.v1.GetTransactionHistoryRequest
-	11, // 7: rgb.ledger.v1.LedgerService.GetChainStats:input_type -> rgb.ledger.v1.GetChainStatsRequest
-	2,  // 8: rgb.ledger.v1.LedgerService.GetBalance:output_type -> rgb.ledger.v1.BalanceResponse
-	5,  // 9: rgb.ledger.v1.LedgerService.SubmitTransaction:output_type -> rgb.ledger.v1.SubmitTransactionResponse
-	7,  // 10: rgb.ledger.v1.LedgerService.RegisterAuthority:output_type -> rgb.ledger.v1.RegisterAuthorityResponse
-	10, // 11: rgb.ledger.v1.LedgerService.GetTransactionHistory:output_type -> rgb.ledger.v1.TransactionHistoryResponse
-	12, // 12: rgb.ledger.v1.LedgerService.GetChainStats:output_type -> rgb.ledger.v1.ChainStatsResponse
-	8,  // [8:13] is the sub-list for method output_type
-	3,  // [3:8] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	14, // 3: rgb.ledger.v1.BlockResponse.block:type_name -> rgb.ledger.v1.BlockInfo
+	14, // 4: rgb.ledger.v1.ListBlocksResponse.blocks:type_name -> rgb.ledger.v1.BlockInfo
+	1,  // 5: rgb.ledger.v1.LedgerService.GetBalance:input_type -> rgb.ledger.v1.GetBalanceRequest
+	3,  // 6: rgb.ledger.v1.LedgerService.SubmitTransaction:input_type -> rgb.ledger.v1.SubmitTransactionRequest
+	6,  // 7: rgb.ledger.v1.LedgerService.RegisterAuthority:input_type -> rgb.ledger.v1.RegisterAuthorityRequest
+	8,  // 8: rgb.ledger.v1.LedgerService.GetTransactionHistory:input_type -> rgb.ledger.v1.GetTransactionHistoryRequest
+	11, // 9: rgb.ledger.v1.LedgerService.GetChainStats:input_type -> rgb.ledger.v1.GetChainStatsRequest
+	13, // 10: rgb.ledger.v1.LedgerService.GetBlock:input_type -> rgb.ledger.v1.GetBlockRequest
+	16, // 11: rgb.ledger.v1.LedgerService.ListBlocks:input_type -> rgb.ledger.v1.ListBlocksRequest
+	2,  // 12: rgb.ledger.v1.LedgerService.GetBalance:output_type -> rgb.ledger.v1.BalanceResponse
+	5,  // 13: rgb.ledger.v1.LedgerService.SubmitTransaction:output_type -> rgb.ledger.v1.SubmitTransactionResponse
+	7,  // 14: rgb.ledger.v1.LedgerService.RegisterAuthority:output_type -> rgb.ledger.v1.RegisterAuthorityResponse
+	10, // 15: rgb.ledger.v1.LedgerService.GetTransactionHistory:output_type -> rgb.ledger.v1.TransactionHistoryResponse
+	12, // 16: rgb.ledger.v1.LedgerService.GetChainStats:output_type -> rgb.ledger.v1.ChainStatsResponse
+	15, // 17: rgb.ledger.v1.LedgerService.GetBlock:output_type -> rgb.ledger.v1.BlockResponse
+	17, // 18: rgb.ledger.v1.LedgerService.ListBlocks:output_type -> rgb.ledger.v1.ListBlocksResponse
+	12, // [12:19] is the sub-list for method output_type
+	5,  // [5:12] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_v1_ledger_proto_init() }
@@ -1023,7 +1360,7 @@ func file_api_proto_v1_ledger_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_v1_ledger_proto_rawDesc), len(file_api_proto_v1_ledger_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   12,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

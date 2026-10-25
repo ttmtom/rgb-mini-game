@@ -88,6 +88,25 @@ type ChainStatsResult struct {
 	TotalPlayers       uint64
 }
 
+// BlockResult holds a single block with its transaction hashes.
+type BlockResult struct {
+	Found    bool
+	Block    *types.Block
+	TxHashes []string
+}
+
+// ListBlocksResult holds a page of blocks.
+type ListBlocksResult struct {
+	Blocks      []*BlockInfoEntry
+	TotalBlocks uint64
+}
+
+// BlockInfoEntry carries block header data plus its tx hashes.
+type BlockInfoEntry struct {
+	Block    *types.Block
+	TxHashes []string
+}
+
 // LedgerUseCase defines the application operations exposed by the Ledger service.
 type LedgerUseCase interface {
 	// GetBalance returns the player record (R/G/B + nonce), or nil if not found.
@@ -109,4 +128,10 @@ type LedgerUseCase interface {
 
 	// GetChainStats returns aggregate chain and network statistics.
 	GetChainStats(ctx context.Context) (ChainStatsResult, error)
+
+	// GetBlock returns the block at the given height with its transaction hashes.
+	GetBlock(ctx context.Context, height uint64) (BlockResult, error)
+
+	// ListBlocks returns a paginated list of blocks ordered by ascending height.
+	ListBlocks(ctx context.Context, page, pageSize uint32) (ListBlocksResult, error)
 }

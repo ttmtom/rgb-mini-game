@@ -18,6 +18,12 @@ service LedgerService {
 
   // GetChainStats returns aggregate chain and network statistics.
   rpc GetChainStats (GetChainStatsRequest) returns (ChainStatsResponse) {}
+
+  // GetBlock returns the block at the given height, including its transaction hashes.
+  rpc GetBlock (GetBlockRequest) returns (BlockResponse) {}
+
+  // ListBlocks returns a paginated list of block headers.
+  rpc ListBlocks (ListBlocksRequest) returns (ListBlocksResponse) {}
 }
 
 // =============================================================================
@@ -137,4 +143,38 @@ message ChainStatsResponse {
   string last_block_hash = 4;
   int64 last_block_timestamp = 5;
   uint64 total_players = 6;
+}
+
+// =============================================================================
+// Block Explorer
+// =============================================================================
+
+message GetBlockRequest {
+  uint64 height = 1;
+}
+
+message BlockInfo {
+  uint64 height = 1;
+  string hash = 2;
+  string prev_hash = 3;
+  string merkle_root = 4;
+  int64 timestamp = 5;
+  uint64 nonce = 6;
+  uint32 difficulty = 7;
+  repeated string tx_hashes = 8;
+}
+
+message BlockResponse {
+  bool found = 1;
+  BlockInfo block = 2;
+}
+
+message ListBlocksRequest {
+  uint32 page = 1;       // 0-indexed
+  uint32 page_size = 2;  // max 50; 0 defaults to 10
+}
+
+message ListBlocksResponse {
+  repeated BlockInfo blocks = 1;
+  uint64 total_blocks = 2;
 }

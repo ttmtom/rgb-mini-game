@@ -155,3 +155,37 @@ func (r *BlockRepository) CountPending(ctx context.Context) (uint64, error) {
 	}
 	return uint64(count), nil
 }
+
+// GetByHeight returns the block at the given height, or nil if not found.
+func (r *BlockRepository) GetByHeight(ctx context.Context, height uint64) (*types.Block, error) {
+	db := dbFromContext(ctx, r.db)
+	var m blockModel
+	result := db.Where("height = ?", height).First(&m)
+	if result.Error == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return toBlockRecord(&m), nil
+}
+
+// ListBlocks returns a paginated slice of blocks ordered by ascending height.
+func (r *BlockRepository) ListBlocks(ctx context.Context, page, pageSize uint32) ([]*types.Block, error) {
+	db := dbFromContext(ctx, r.db)
+	if pageSize == 0 || pageSize > 50 {
+		pageSize = 10
+	}
+	var models []blockModel
+	if err := db.Order("height ASC").
+		Limit(int(pageSize)).
+		Offset(int(page * pageSize)).
+		Find(&models).Error; err != nil {
+		return nil, err
+	}
+	blocks := make([]*types.Block, len(models))
+	for i, m := range models {
+		blocks[i] = toBlockRecord(&m)
+	}
+	return blocks, nil
+}

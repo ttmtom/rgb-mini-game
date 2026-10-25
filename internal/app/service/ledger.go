@@ -314,3 +314,43 @@ func (s *LedgerService) GetChainStats(ctx context.Context) (in.ChainStatsResult,
 	}
 	return result, nil
 }
+
+// GetBlock returns the block at the given height with its transaction hashes.
+func (s *LedgerService) GetBlock(ctx context.Context, height uint64) (in.BlockResult, error) {
+	block, err := s.blockRepo.GetByHeight(ctx, height)
+	if err != nil {
+		return in.BlockResult{}, fmt.Errorf("fetch block %d: %w", height, err)
+	}
+	if block == nil {
+		return in.BlockResult{Found: false}, nil
+	}
+
+	hashes, err := s.blockRepo.TransactionHashesByBlock(ctx, height)
+	if err != nil {
+		return in.BlockResult{}, fmt.Errorf("fetch tx hashes for block %d: %w", height, err)
+	}
+	return in.BlockResult{Found: true, Block: block, TxHashes: hashes}, nil
+}
+
+// ListBlocks returns a paginated list of blocks with their transaction hashes.
+func (s *LedgerService) ListBlocks(ctx context.Context, page, pageSize uint32) (in.ListBlocksResult, error) {
+	total, err := s.blockRepo.CountBlocks(ctx)
+	if err != nil {
+		return in.ListBlocksResult{}, fmt.Errorf("count blocks: %w", err)
+	}
+
+	blocks, err := s.blockRepo.ListBlocks(ctx, page, pageSize)
+	if err != nil {
+		return in.ListBlocksResult{}, fmt.Errorf("list blocks: %w", err)
+	}
+
+	entries := make([]*in.BlockInfoEntry, len(blocks))
+	for i, b := range blocks {
+		hashes, err := s.blockRepo.TransactionHashesByBlock(ctx, b.Height)
+		if err != nil {
+			return in.ListBlocksResult{}, fmt.Errorf("fetch tx hashes for block %d: %w", b.Height, err)
+		}
+		entries[i] = &in.BlockInfoEntry{Block: b, TxHashes: hashes}
+	}
+	return in.ListBlocksResult{Blocks: entries, TotalBlocks: total}, nil
+}

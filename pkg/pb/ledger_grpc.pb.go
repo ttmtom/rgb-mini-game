@@ -24,6 +24,8 @@ const (
 	LedgerService_RegisterAuthority_FullMethodName     = "/rgb.ledger.v1.LedgerService/RegisterAuthority"
 	LedgerService_GetTransactionHistory_FullMethodName = "/rgb.ledger.v1.LedgerService/GetTransactionHistory"
 	LedgerService_GetChainStats_FullMethodName         = "/rgb.ledger.v1.LedgerService/GetChainStats"
+	LedgerService_GetBlock_FullMethodName              = "/rgb.ledger.v1.LedgerService/GetBlock"
+	LedgerService_ListBlocks_FullMethodName            = "/rgb.ledger.v1.LedgerService/ListBlocks"
 )
 
 // LedgerServiceClient is the client API for LedgerService service.
@@ -39,6 +41,10 @@ type LedgerServiceClient interface {
 	GetTransactionHistory(ctx context.Context, in *GetTransactionHistoryRequest, opts ...grpc.CallOption) (*TransactionHistoryResponse, error)
 	// GetChainStats returns aggregate chain and network statistics.
 	GetChainStats(ctx context.Context, in *GetChainStatsRequest, opts ...grpc.CallOption) (*ChainStatsResponse, error)
+	// GetBlock returns the block at the given height, including its transaction hashes.
+	GetBlock(ctx context.Context, in *GetBlockRequest, opts ...grpc.CallOption) (*BlockResponse, error)
+	// ListBlocks returns a paginated list of block headers.
+	ListBlocks(ctx context.Context, in *ListBlocksRequest, opts ...grpc.CallOption) (*ListBlocksResponse, error)
 }
 
 type ledgerServiceClient struct {
@@ -99,6 +105,26 @@ func (c *ledgerServiceClient) GetChainStats(ctx context.Context, in *GetChainSta
 	return out, nil
 }
 
+func (c *ledgerServiceClient) GetBlock(ctx context.Context, in *GetBlockRequest, opts ...grpc.CallOption) (*BlockResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BlockResponse)
+	err := c.cc.Invoke(ctx, LedgerService_GetBlock_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ledgerServiceClient) ListBlocks(ctx context.Context, in *ListBlocksRequest, opts ...grpc.CallOption) (*ListBlocksResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListBlocksResponse)
+	err := c.cc.Invoke(ctx, LedgerService_ListBlocks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LedgerServiceServer is the server API for LedgerService service.
 // All implementations must embed UnimplementedLedgerServiceServer
 // for forward compatibility.
@@ -112,6 +138,10 @@ type LedgerServiceServer interface {
 	GetTransactionHistory(context.Context, *GetTransactionHistoryRequest) (*TransactionHistoryResponse, error)
 	// GetChainStats returns aggregate chain and network statistics.
 	GetChainStats(context.Context, *GetChainStatsRequest) (*ChainStatsResponse, error)
+	// GetBlock returns the block at the given height, including its transaction hashes.
+	GetBlock(context.Context, *GetBlockRequest) (*BlockResponse, error)
+	// ListBlocks returns a paginated list of block headers.
+	ListBlocks(context.Context, *ListBlocksRequest) (*ListBlocksResponse, error)
 	mustEmbedUnimplementedLedgerServiceServer()
 }
 
@@ -136,6 +166,12 @@ func (UnimplementedLedgerServiceServer) GetTransactionHistory(context.Context, *
 }
 func (UnimplementedLedgerServiceServer) GetChainStats(context.Context, *GetChainStatsRequest) (*ChainStatsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetChainStats not implemented")
+}
+func (UnimplementedLedgerServiceServer) GetBlock(context.Context, *GetBlockRequest) (*BlockResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBlock not implemented")
+}
+func (UnimplementedLedgerServiceServer) ListBlocks(context.Context, *ListBlocksRequest) (*ListBlocksResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListBlocks not implemented")
 }
 func (UnimplementedLedgerServiceServer) mustEmbedUnimplementedLedgerServiceServer() {}
 func (UnimplementedLedgerServiceServer) testEmbeddedByValue()                       {}
@@ -248,6 +284,42 @@ func _LedgerService_GetChainStats_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LedgerService_GetBlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBlockRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LedgerServiceServer).GetBlock(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LedgerService_GetBlock_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LedgerServiceServer).GetBlock(ctx, req.(*GetBlockRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LedgerService_ListBlocks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListBlocksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LedgerServiceServer).ListBlocks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LedgerService_ListBlocks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LedgerServiceServer).ListBlocks(ctx, req.(*ListBlocksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LedgerService_ServiceDesc is the grpc.ServiceDesc for LedgerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -274,6 +346,14 @@ var LedgerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetChainStats",
 			Handler:    _LedgerService_GetChainStats_Handler,
+		},
+		{
+			MethodName: "GetBlock",
+			Handler:    _LedgerService_GetBlock_Handler,
+		},
+		{
+			MethodName: "ListBlocks",
+			Handler:    _LedgerService_ListBlocks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

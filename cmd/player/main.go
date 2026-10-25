@@ -85,7 +85,8 @@ func main() {
 		fmt.Println("  4. Transfer")
 		fmt.Println("  5. Transaction History")
 		fmt.Println("  6. Chain Stats")
-		fmt.Println("  7. Quit")
+		fmt.Println("  7. Block Explorer")
+		fmt.Println("  8. Quit")
 		fmt.Print("Select option: ")
 
 		if !scanner.Scan() {
@@ -122,11 +123,14 @@ func main() {
 			doChainStats(ledgerClient)
 
 		case "7":
+			doBlockExplorer(ledgerClient, scanner)
+
+		case "8":
 			fmt.Println("Goodbye!")
 			return
 
 		default:
-			fmt.Println("Unknown option. Please enter 1–7.")
+			fmt.Println("Unknown option. Please enter 1–8.")
 		}
 	}
 }
@@ -360,4 +364,82 @@ func doChainStats(client pb.LedgerServiceClient) {
 	fmt.Printf("Pending TXs     : %d\n", resp.GetPendingTxCount())
 	fmt.Printf("Total TXs       : %d\n", resp.GetTotalTxCount())
 	fmt.Printf("Total Players   : %d\n", resp.GetTotalPlayers())
+}
+
+// doBlockExplorer lets the user inspect a specific block or list recent blocks.
+func doBlockExplorer(client pb.LedgerServiceClient, scanner *bufio.Scanner) {
+	fmt.Println("Block Explorer")
+	fmt.Println("  a. Get block by height")
+	fmt.Println("  b. List blocks (page)")
+	fmt.Print("Choice: ")
+	if !scanner.Scan() {
+		return
+	}
+	choice := strings.TrimSpace(scanner.Text())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	switch strings.ToLower(choice) {
+	case "a":
+		height, ok := promptUint64(scanner, "Block height: ")
+		if !ok {
+			return
+		}
+		resp, err := client.GetBlock(ctx, &pb.GetBlockRequest{Height: height})
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			return
+		}
+		if !resp.GetFound() {
+			fmt.Printf("Block %d not found\n", height)
+			return
+		}
+		printBlock(resp.GetBlock())
+
+	case "b":
+		page, ok := promptUint32(scanner, "Page (0-indexed): ")
+		if !ok {
+			return
+		}
+		resp, err := client.ListBlocks(ctx, &pb.ListBlocksRequest{Page: page, PageSize: 5})
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			return
+		}
+		fmt.Printf("Blocks (total=%d)\n", resp.GetTotalBlocks())
+		fmt.Println(strings.Repeat("-", 72))
+		for _, b := range resp.GetBlocks() {
+			fmt.Printf("Block #%-6d  txs=%-3d  hash=%s...\n",
+				b.GetHeight(), len(b.GetTxHashes()), b.GetHash()[:16])
+		}
+	}
+}
+
+func printBlock(b *pb.BlockInfo) {
+	fmt.Printf("Block #%d\n", b.GetHeight())
+	fmt.Printf("  Hash       : %s\n", b.GetHash())
+	fmt.Printf("  Prev Hash  : %s\n", b.GetPrevHash())
+	fmt.Printf("  Merkle Root: %s\n", b.GetMerkleRoot())
+	fmt.Printf("  Timestamp  : %s\n", time.Unix(b.GetTimestamp(), 0).Format(time.RFC3339))
+	fmt.Printf("  Nonce      : %d\n", b.GetNonce())
+	fmt.Printf("  Difficulty : %d\n", b.GetDifficulty())
+	fmt.Printf("  TXs        : %d\n", len(b.GetTxHashes()))
+	for _, h := range b.GetTxHashes() {
+		fmt.Printf("    - %s\n", h)
+	}
+}
+
+// promptUint64 reads a line from the scanner, parses it as uint64.
+func promptUint64(scanner *bufio.Scanner, prompt string) (uint64, bool) {
+	fmt.Print(prompt)
+	if !scanner.Scan() {
+		return 0, false
+	}
+	v, err := strconv.ParseUint(strings.TrimSpace(scanner.Text()), 10, 64)
+	if err != nil {
+		fmt.Printf("Invalid number: %v\n", err)
+		return 0, false
+	}
+	return v, true
 }
