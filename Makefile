@@ -30,3 +30,9 @@ run-server:
 run-player:
 	go run cmd/player/main.go
 
+test:
+	go test ./...
+
+test-v:
+	go test -v ./...
+
