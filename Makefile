@@ -30,9 +30,9 @@ run-server:
 run-player:
 	go run ./cmd/player
 
-test:
-	go test ./...
+test-unit:
+	go test ./internal/... ./pkg/...
 
-test-v:
-	go test -v ./...
+test-e2e:
+	go test -v -tags e2e -timeout 120s ./test/e2e/...
 
