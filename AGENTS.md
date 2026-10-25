@@ -48,11 +48,13 @@ The Ledger also runs a **BlockSealer** background goroutine that periodically mi
 internal/
   domain/                        # Pure domain ring — no external imports
     types/                       # PlayerRecord, PlayerState, TransactionRecord,
-    │                            # MissionRecord, Mission, RGB, Block, AuthorityRecord
+    │                            # MissionRecord, Mission, RGB, Block, AuthorityRecord,
+    │                            # ChallengeRecord, ChallengeStatus
     enum/color.go                # Color (Red=0, Green=1, Blue=2)
     engine/engine.go             # GameEngine domain logic (clamped calc, PlayerTransactions, PlayerCompleteMission)
     chain/validator.go           # ValidateChain — checks hash linkage, PrevHash, Merkle root, PoW per block
     merkle/merkle.go             # BuildMerkleRoot — deterministic Merkle root over tx hashes
+    mission/templates.go         # Difficulty enum (Easy/Medium/Hard), CooldownMultiplier, Pool of mission templates
 
   app/                           # Application ring
     port/
@@ -63,12 +65,13 @@ internal/
         transactor.go            # Transactor — InTransaction(ctx, fn)
         repositories.go          # PlayerRepository, TransactionRepository (ctx-based, no *gorm.DB)
         mission_repository.go    # MissionRepository
+        challenge_repository.go  # ChallengeRepository — Create, FindByID, UpdateStatus (Redis + TTL)
         block_repository.go      # BlockRepository — LatestBlock, CreateBlock, SealTransactions,
         │                        # PendingTransactions, AllBlocks, TransactionHashesByBlock
         authority_repository.go  # AuthorityRepository — Register, Exists
         authority.go             # PublicAuthority, FullAuthority
         engine.go                # GameEngine interface
-        ledger_client.go         # LedgerClient — GetAuthorityNonce, SubmitMint
+        ledger_client.go         # LedgerClient — GetAuthorityNonce, SubmitMint, SubmitSignedTransfer
     service/
       ledger.go                  # LedgerService — implements port/in.LedgerUseCase
       game.go                    # GameService   — implements port/in.GameUseCase
@@ -80,7 +83,11 @@ internal/
       grpc/
         ledger/handler.go        # pb.LedgerServiceServer; owns ALL crypto verification;
         │                        # MINT check uses AuthorityRepository.Exists (open authority set)
+        │                        # Also handles GetTransactionHistory, GetChainStats, GetBlock,
+        │                        # ListBlocks, GetLeaderboard RPCs
         game/handler.go          # pb.GameServiceServer; translates pb ↔ domain types
+        │                        # ProposeChallenge/RespondChallenge/GetChallenge: verifies both
+        │                        # signed payloads at the transport boundary
     driven/                      # Right-side adapters: implement out/ ports
       postgres/
         postgres.go              # gorm.Open wrapper
@@ -94,6 +101,7 @@ internal/
       redis/
         redis.go                 # Redis client init
         mission_repository.go    # out.MissionRepository via Redis TTL keys
+        challenge_repository.go  # out.ChallengeRepository via Redis JSON + TTL
       authority/
         authority.go             # out.PublicAuthority + out.FullAuthority + Load()
       ledger/
@@ -158,6 +166,8 @@ Block Sealer env vars: `BLOCK_INTERVAL_SECONDS` (default `10`), `BLOCK_DIFFICULT
 - `domain/types.PlayerState{R, G, B uint8, Nonce uint64}` — engine working state
 - `domain/types.Block{Height, Hash, PrevHash, MerkleRoot, Timestamp, Nonce, Difficulty}` — a sealed block; `Nonce` is the PoW nonce, `Difficulty` is the number of leading zero hex nibbles required
 - `domain/types.AuthorityRecord{ID, PubKeyHex, RegisteredAt}` — a registered MINT authority
+- `domain/types.ChallengeRecord{ID, ProposerID, OpponentID, OfferRed/Green/Blue, WantRed/Green/Blue, Status, CreatedAt, ExpiresAt, RawPayload, Signature, SenderPubKey}` — a peer-to-peer token-swap challenge stored in Redis
+- `domain/types.ChallengeStatus` — `ChallengePending=0`, `ChallengeAccepted=1`, `ChallengeDeclined=2`, `ChallengeExpired=3`, `ChallengeCompleted=4`
 - `domain/engine.Engine.calculation(color uint8, val int8)` is unexported; clamps result to `[0, 255]`
 - `app/port/in.TxType`: `TxTypeTransfer = 0`, `TxTypeMint = 1` — mirrors `pb.TransactionPayload_TxType`
 - `domain/enum.Color{Red=0, Green=1, Blue=2}` — matches `pb.RewardColor` ordinals in `game.proto`
@@ -182,7 +192,9 @@ Available repository write methods (all accept `context.Context`):
 - `repos.Player.Find(ctx, playerID) (*types.PlayerRecord, error)` — plain read, no lock
 - `repos.Player.FindOrCreate(ctx, playerID) (*types.PlayerRecord, error)` — upserts and locks (must be inside tx)
 - `repos.Player.UpdateBalance(ctx, *types.PlayerRecord) error` — saves updated R/G/B/Nonce
+- `repos.Player.GetLeaderboard(ctx, topN uint32, sortBy string) ([]*types.LeaderboardEntry, error)` — top-N players ordered by RED/GREEN/BLUE/TOTAL DESC
 - `repos.Transaction.Create(ctx, *types.TransactionRecord) error` — inserts a new tx record
+- `repos.Transaction.History(ctx, playerID, limit, offset) ([]*types.TransactionRecord, total uint64, error)` — paginated tx history
 - `repos.Block.AllBlocks(ctx) ([]*types.Block, error)` — all blocks ordered by ascending height
 - `repos.Block.TransactionHashesByBlock(ctx, height) ([]string, error)` — tx hashes sealed in a block
 - `repos.Authority.Register(ctx, *types.AuthorityRecord) error` — idempotent upsert
@@ -217,8 +229,9 @@ go blockSealer.Start(ctx)                   ← PoW mining loop
 authority.NewFullAuthority(kp)
 drivenredis.Init → redisClient
 drivenredis.NewMissionRepository(redisClient)
+drivenredis.NewChallengeRepository(redisClient)   ← challenge storage
 drivenledger.New(pb.NewLedgerServiceClient(conn)) ← LedgerClient driven adapter
-service.NewGameService(missionRepo, auth, ledgerClient, cfg)
+service.NewGameService(missionRepo, challengeRepo, auth, ledgerClient, cfg)
 grpcgame.New(gameSvc)                              ← driving adapter
 pb.RegisterGameServiceServer(grpcServer, handler)
 ```
@@ -241,6 +254,7 @@ pb.RegisterGameServiceServer(grpcServer, handler)
 `internal/adapter/driven/ledger/client.go` implements `out.LedgerClient`. It encapsulates all proto marshaling and MINT signing, keeping `GameService` free of transport concerns:
 - `GetAuthorityNonce(ctx, authorityID)` → calls `pb.GetBalance`, returns `NextNonce`
 - `SubmitMint(ctx, auth, senderID, receiverID, amtR, amtG, amtB, nonce)` → builds `pb.TransactionPayload`, calls `auth.Sign(rawPayload)`, submits via `pb.SubmitTransaction`
+- `SubmitSignedTransfer(ctx, rawPayload, signature, senderPubKey)` → forwards a pre-signed TRANSFER payload to the Ledger (used for the Challenge system); returns `TransferResult{Success, TxHash, NewBalance, ErrorMessage}`
 
 ---
 
@@ -255,14 +269,63 @@ Game Server stores mission state in Redis via `adapter/driven/redis.MissionRepos
 
 ---
 
+## Redis Challenge Storage
+
+Game Server stores peer-to-peer challenges in Redis via `adapter/driven/redis.ChallengeRepository`. Key layout:
+- `challenge:{id}` — JSON `types.ChallengeRecord`, TTL = `ChallengeTTL` (default 10 min)
+
+`out.ChallengeRepository` methods: `Create(ctx, record, ttl)`, `FindByID(ctx, id)`, `UpdateStatus(ctx, id, status)`. Construct via `redis.NewChallengeRepository(client *redis.Client)`.
+
+`GameServiceConfig.ChallengeTTL` controls expiry (default `10 * time.Minute`).
+
+---
+
+## Variable Mission Difficulty
+
+`internal/domain/mission/templates.go` defines a difficulty system:
+- `Difficulty` type: `Easy=0`, `Medium=1`, `Hard=2`
+- `Difficulty.CooldownMultiplier()` — Easy×1, Medium×2, Hard×4
+- `Pool []Template` — canonical library of 17 pre-defined mission templates: Easy (+1 single channel), Medium (+3 single-channel or +2/+1 multi), Hard (+5 single-channel or +3/+2 multi-combo)
+- `Template{Difficulty, Reward types.RGB, PrimaryColor int32}` — sampled at `RequestMission` time
+
+`MissionResponse` now carries `difficulty`, `reward_red`, `reward_green`, `reward_blue` fields in addition to the backward-compat `reward_color`.
+
+---
+
+## Player-to-Player Challenge System
+
+Challenges let two players agree to swap tokens without a trusted intermediary. The proposer pre-signs their TRANSFER leg; the opponent signs theirs only upon acceptance.
+
+**Flow:**
+1. Proposer calls `ProposeChallenge` — pre-signs their TRANSFER (proposer→opponent) and sends `{raw_payload, signature, sender_pub_key}`. The Game Server stores a `ChallengeRecord` in Redis with `Pending` status.
+2. Opponent calls `RespondChallenge(accept=true)` — pre-signs their TRANSFER (opponent→proposer). The Game Server verifies both signed payloads, then submits both to the Ledger sequentially. On failure the status is rolled back to reflect the error.
+3. Either party can call `GetChallenge(challenge_id)` to check status.
+
+**CLI options** (Player CLI): 9 = Propose Challenge, 10 = Respond to Challenge, 11 = View Challenge.
+
+---
+
 ## Proto & Generated Code
 
 - Proto sources: `api/proto/v1/ledger.proto`, `api/proto/v1/game.proto`
 - `game.proto` imports `ledger.proto` (shares `BalanceResponse`)
 - Both use `option go_package = "./pkg/pb"` → all generated types land in `pkg/pb`
 - Regenerate after any `.proto` change: `PATH="$PATH:$(go env GOPATH)/bin" make proto-v1`
-- `LedgerService` RPCs: `GetBalance`, `SubmitTransaction`, `RegisterAuthority`; `SubmitTransactionResponse` returns `new_balance BalanceResponse`
-- `GameService` RPCs: `RequestMission(player_id) → MissionResponse` and `CompleteMission(mission_id, player_id) → CompleteMissionResponse`
+- `LedgerService` RPCs:
+  - `GetBalance(player_id) → BalanceResponse`
+  - `SubmitTransaction(raw_payload, signature, sender_pub_key) → SubmitTransactionResponse` (includes `new_balance`)
+  - `RegisterAuthority(pub_key, signature) → RegisterAuthorityResponse`
+  - `GetTransactionHistory(player_id, limit, offset) → TransactionHistoryResponse` — paginated tx history per player
+  - `GetChainStats() → ChainStatsResponse` — chain height, pending/total tx count, last block info, total players
+  - `GetBlock(height) → BlockResponse` — single block with tx hashes
+  - `ListBlocks(page, page_size) → ListBlocksResponse` — paginated block headers
+  - `GetLeaderboard(top_n, sort_by) → LeaderboardResponse` — top-N players by RED/GREEN/BLUE/TOTAL
+- `GameService` RPCs:
+  - `RequestMission(player_id) → MissionResponse` (includes difficulty and per-channel reward)
+  - `CompleteMission(mission_id, player_id) → CompleteMissionResponse`
+  - `ProposeChallenge(proposer_id, opponent_id, offer/want amounts, pre-signed payload) → ChallengeResponse`
+  - `RespondChallenge(challenge_id, player_id, accept, signed payload) → RespondChallengeResponse`
+  - `GetChallenge(challenge_id) → ChallengeResponse`
 
 > **Note:** `protoc-gen-go` and `protoc-gen-go-grpc` must be on `PATH`. Install with:
 > `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest`
