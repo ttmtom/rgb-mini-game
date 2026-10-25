@@ -22,13 +22,13 @@ build-player:
 build-all: build-ledger build-server build-player
 
 run-ledger:
-	go run cmd/ledger/main.go
+	go run ./cmd/ledger
 
 run-server:
-	go run cmd/server/main.go
+	go run ./cmd/server
 
 run-player:
-	go run cmd/player/main.go
+	go run ./cmd/player
 
 test:
 	go test ./...
