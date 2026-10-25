@@ -29,4 +29,3 @@ func main() {
 	}
 	logger.Info("Game Server stopped")
 }
-
