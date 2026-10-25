@@ -12,6 +12,9 @@ service LedgerService {
   // RegisterAuthority adds a new minting authority to the open authority set.
   // The caller must prove ownership of the keypair by signing their own public key.
   rpc RegisterAuthority (RegisterAuthorityRequest) returns (RegisterAuthorityResponse) {}
+
+  // GetTransactionHistory returns paginated transaction history for a player.
+  rpc GetTransactionHistory (GetTransactionHistoryRequest) returns (TransactionHistoryResponse) {}
 }
 
 // =============================================================================
@@ -88,4 +91,32 @@ message RegisterAuthorityResponse {
   string error_message = 2;
   // The authority ID derived from the registered key: hex(sha256(pub_key)).
   string authority_id = 3;
+}
+
+// =============================================================================
+// Transaction History
+// =============================================================================
+
+message GetTransactionHistoryRequest {
+  string player_id = 1;
+  uint32 limit = 2;  // max 100; 0 defaults to 20
+  uint32 offset = 3;
+}
+
+message TransactionEntry {
+  string hash = 1;
+  uint32 type = 2;       // 0=TRANSFER, 1=MINT
+  string sender_id = 3;
+  string receiver_id = 4;
+  uint32 red = 5;
+  uint32 green = 6;
+  uint32 blue = 7;
+  uint64 nonce = 8;
+  int64 timestamp = 9;
+  sint64 block_height = 10; // -1 when pending (not yet sealed)
+}
+
+message TransactionHistoryResponse {
+  repeated TransactionEntry transactions = 1;
+  uint64 total = 2;
 }

@@ -83,7 +83,8 @@ func main() {
 		fmt.Println("  2. Request Mission")
 		fmt.Println("  3. Complete Mission")
 		fmt.Println("  4. Transfer")
-		fmt.Println("  5. Quit")
+		fmt.Println("  5. Transaction History")
+		fmt.Println("  6. Quit")
 		fmt.Print("Select option: ")
 
 		if !scanner.Scan() {
@@ -114,11 +115,14 @@ func main() {
 			doTransfer(ledgerClient, playerID, keypair, scanner)
 
 		case "5":
+			doTxHistory(ledgerClient, playerID, scanner)
+
+		case "6":
 			fmt.Println("Goodbye!")
 			return
 
 		default:
-			fmt.Println("Unknown option. Please enter 1–5.")
+			fmt.Println("Unknown option. Please enter 1–6.")
 		}
 	}
 }
@@ -290,4 +294,45 @@ func promptUint32(scanner *bufio.Scanner, prompt string) (uint32, bool) {
 		return 0, false
 	}
 	return uint32(v), true
+}
+
+// doTxHistory fetches and prints paginated transaction history for the player.
+func doTxHistory(client pb.LedgerServiceClient, playerID string, scanner *bufio.Scanner) {
+	fmt.Print("Limit (default 10): ")
+	var limit uint32 = 10
+	if scanner.Scan() {
+		if v, err := strconv.ParseUint(strings.TrimSpace(scanner.Text()), 10, 32); err == nil && v > 0 {
+			limit = uint32(v)
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := client.GetTransactionHistory(ctx, &pb.GetTransactionHistoryRequest{
+		PlayerId: playerID,
+		Limit:    limit,
+	})
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Transaction History (total=%d)\n", resp.GetTotal())
+	fmt.Println(strings.Repeat("-", 80))
+	for _, t := range resp.GetTransactions() {
+		txType := "TRANSFER"
+		if t.GetType() == 1 {
+			txType = "MINT"
+		}
+		blockStr := fmt.Sprintf("block %d", t.GetBlockHeight())
+		if t.GetBlockHeight() < 0 {
+			blockStr = "pending"
+		}
+		fmt.Printf("[%s] %s  R:%-3d G:%-3d B:%-3d  %s → %s  (%s)\n",
+			txType, t.GetHash()[:12]+"...",
+			t.GetRed(), t.GetGreen(), t.GetBlue(),
+			t.GetSenderId()[:12]+"...", t.GetReceiverId()[:12]+"...",
+			blockStr)
+	}
 }

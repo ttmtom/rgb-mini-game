@@ -51,6 +51,33 @@ type RegisterAuthorityResult struct {
 	AuthorityID  string
 }
 
+// TransactionHistoryRequest carries pagination params for a player's tx history.
+type TransactionHistoryRequest struct {
+	PlayerID string
+	Limit    uint32 // 0 → default 20, max 100
+	Offset   uint32
+}
+
+// TransactionHistoryEntry is a single transaction in the history list.
+type TransactionHistoryEntry struct {
+	Hash        string
+	Type        uint8
+	SenderID    string
+	ReceiverID  string
+	Red         uint32
+	Green       uint32
+	Blue        uint32
+	Nonce       uint64
+	Timestamp   int64
+	BlockHeight int64 // -1 if pending
+}
+
+// TransactionHistoryResult holds a page of transaction history.
+type TransactionHistoryResult struct {
+	Transactions []*TransactionHistoryEntry
+	Total        uint64
+}
+
 // LedgerUseCase defines the application operations exposed by the Ledger service.
 type LedgerUseCase interface {
 	// GetBalance returns the player record (R/G/B + nonce), or nil if not found.
@@ -66,4 +93,7 @@ type LedgerUseCase interface {
 
 	// RegisterAuthority adds a new minting authority after verifying the self-signed proof.
 	RegisterAuthority(ctx context.Context, req RegisterAuthorityRequest) (RegisterAuthorityResult, error)
+
+	// GetTransactionHistory returns paginated transaction history for a player.
+	GetTransactionHistory(ctx context.Context, req TransactionHistoryRequest) (TransactionHistoryResult, error)
 }

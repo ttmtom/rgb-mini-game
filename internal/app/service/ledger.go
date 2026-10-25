@@ -252,3 +252,30 @@ func (s *LedgerService) RegisterAuthority(ctx context.Context, req in.RegisterAu
 	logger.Infof("Authority registered: id=%s", req.AuthorityID)
 	return in.RegisterAuthorityResult{Success: true, AuthorityID: req.AuthorityID}, nil
 }
+
+// GetTransactionHistory returns paginated transactions where the player is sender or receiver.
+func (s *LedgerService) GetTransactionHistory(ctx context.Context, req in.TransactionHistoryRequest) (in.TransactionHistoryResult, error) {
+	logger.Infof("GetTransactionHistory for player %s (limit=%d offset=%d)", req.PlayerID, req.Limit, req.Offset)
+
+	records, total, err := s.txRepo.FindByPlayer(ctx, req.PlayerID, req.Limit, req.Offset)
+	if err != nil {
+		return in.TransactionHistoryResult{}, fmt.Errorf("query transaction history: %w", err)
+	}
+
+	entries := make([]*in.TransactionHistoryEntry, len(records))
+	for i, r := range records {
+		entries[i] = &in.TransactionHistoryEntry{
+			Hash:        r.Hash,
+			Type:        r.Type,
+			SenderID:    r.SenderID,
+			ReceiverID:  r.ReceiverID,
+			Red:         r.Red,
+			Green:       r.Green,
+			Blue:        r.Blue,
+			Nonce:       r.Nonce,
+			Timestamp:   r.Timestamp,
+			BlockHeight: r.BlockHeight,
+		}
+	}
+	return in.TransactionHistoryResult{Transactions: entries, Total: total}, nil
+}

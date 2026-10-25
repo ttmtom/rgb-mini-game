@@ -25,4 +25,12 @@ type PlayerRepository interface {
 type TransactionRepository interface {
 	// Create persists a new transaction record.
 	Create(ctx context.Context, record *types.TransactionRecord) error
+
+	// FindByPlayer returns transactions where the player is sender or receiver,
+	// ordered by timestamp descending, with limit/offset pagination.
+	// Also returns the total count of matching transactions.
+	FindByPlayer(ctx context.Context, playerID string, limit, offset uint32) ([]*types.TransactionRecord, uint64, error)
+
+	// CountAll returns the total number of transaction records.
+	CountAll(ctx context.Context) (uint64, error)
 }

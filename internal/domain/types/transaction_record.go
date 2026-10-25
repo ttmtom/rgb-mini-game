@@ -4,13 +4,14 @@ package types
 // It intentionally carries no persistence tags; the adapter layer is responsible
 // for mapping this to its own storage model.
 type TransactionRecord struct {
-	Hash       string
-	SenderID   string
-	ReceiverID string
-	Nonce      uint64
-	Timestamp  int64
-	Red        uint32
-	Green      uint32
-	Blue       uint32
-	Type       uint8 // 0=TRANSFER, 1=MINT
+	Hash        string
+	SenderID    string
+	ReceiverID  string
+	Nonce       uint64
+	Timestamp   int64
+	Red         uint32
+	Green       uint32
+	Blue        uint32
+	Type        uint8 // 0=TRANSFER, 1=MINT
+	BlockHeight int64 // -1 if not yet sealed into a block
 }

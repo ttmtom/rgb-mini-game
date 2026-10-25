@@ -162,3 +162,32 @@ func (h *Handler) RegisterAuthority(ctx context.Context, req *pb.RegisterAuthori
 		AuthorityId:  result.AuthorityID,
 	}, nil
 }
+
+// GetTransactionHistory implements pb.LedgerServiceServer.
+func (h *Handler) GetTransactionHistory(ctx context.Context, req *pb.GetTransactionHistoryRequest) (*pb.TransactionHistoryResponse, error) {
+	result, err := h.ledger.GetTransactionHistory(ctx, in.TransactionHistoryRequest{
+		PlayerID: req.GetPlayerId(),
+		Limit:    req.GetLimit(),
+		Offset:   req.GetOffset(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	entries := make([]*pb.TransactionEntry, len(result.Transactions))
+	for i, t := range result.Transactions {
+		entries[i] = &pb.TransactionEntry{
+			Hash:        t.Hash,
+			Type:        uint32(t.Type),
+			SenderId:    t.SenderID,
+			ReceiverId:  t.ReceiverID,
+			Red:         t.Red,
+			Green:       t.Green,
+			Blue:        t.Blue,
+			Nonce:       t.Nonce,
+			Timestamp:   t.Timestamp,
+			BlockHeight: int64(t.BlockHeight),
+		}
+	}
+	return &pb.TransactionHistoryResponse{Transactions: entries, Total: result.Total}, nil
+}
