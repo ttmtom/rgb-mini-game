@@ -1179,6 +1179,186 @@ func (x *ListBlocksResponse) GetTotalBlocks() uint64 {
 	return 0
 }
 
+type GetLeaderboardRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TopN          uint32                 `protobuf:"varint,1,opt,name=top_n,json=topN,proto3" json:"top_n,omitempty"`      // max 100; 0 defaults to 10
+	SortBy        string                 `protobuf:"bytes,2,opt,name=sort_by,json=sortBy,proto3" json:"sort_by,omitempty"` // "RED", "GREEN", "BLUE", "TOTAL" (default: "TOTAL")
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLeaderboardRequest) Reset() {
+	*x = GetLeaderboardRequest{}
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLeaderboardRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLeaderboardRequest) ProtoMessage() {}
+
+func (x *GetLeaderboardRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLeaderboardRequest.ProtoReflect.Descriptor instead.
+func (*GetLeaderboardRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *GetLeaderboardRequest) GetTopN() uint32 {
+	if x != nil {
+		return x.TopN
+	}
+	return 0
+}
+
+func (x *GetLeaderboardRequest) GetSortBy() string {
+	if x != nil {
+		return x.SortBy
+	}
+	return ""
+}
+
+type LeaderboardEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Rank          uint32                 `protobuf:"varint,1,opt,name=rank,proto3" json:"rank,omitempty"`
+	PlayerId      string                 `protobuf:"bytes,2,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	Red           uint32                 `protobuf:"varint,3,opt,name=red,proto3" json:"red,omitempty"`
+	Green         uint32                 `protobuf:"varint,4,opt,name=green,proto3" json:"green,omitempty"`
+	Blue          uint32                 `protobuf:"varint,5,opt,name=blue,proto3" json:"blue,omitempty"`
+	Total         uint32                 `protobuf:"varint,6,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LeaderboardEntry) Reset() {
+	*x = LeaderboardEntry{}
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LeaderboardEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LeaderboardEntry) ProtoMessage() {}
+
+func (x *LeaderboardEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LeaderboardEntry.ProtoReflect.Descriptor instead.
+func (*LeaderboardEntry) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *LeaderboardEntry) GetRank() uint32 {
+	if x != nil {
+		return x.Rank
+	}
+	return 0
+}
+
+func (x *LeaderboardEntry) GetPlayerId() string {
+	if x != nil {
+		return x.PlayerId
+	}
+	return ""
+}
+
+func (x *LeaderboardEntry) GetRed() uint32 {
+	if x != nil {
+		return x.Red
+	}
+	return 0
+}
+
+func (x *LeaderboardEntry) GetGreen() uint32 {
+	if x != nil {
+		return x.Green
+	}
+	return 0
+}
+
+func (x *LeaderboardEntry) GetBlue() uint32 {
+	if x != nil {
+		return x.Blue
+	}
+	return 0
+}
+
+func (x *LeaderboardEntry) GetTotal() uint32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type LeaderboardResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Entries       []*LeaderboardEntry    `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LeaderboardResponse) Reset() {
+	*x = LeaderboardResponse{}
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LeaderboardResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LeaderboardResponse) ProtoMessage() {}
+
+func (x *LeaderboardResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_v1_ledger_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LeaderboardResponse.ProtoReflect.Descriptor instead.
+func (*LeaderboardResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_v1_ledger_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *LeaderboardResponse) GetEntries() []*LeaderboardEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
 var File_api_proto_v1_ledger_proto protoreflect.FileDescriptor
 
 const file_api_proto_v1_ledger_proto_rawDesc = "" +
@@ -1275,7 +1455,19 @@ const file_api_proto_v1_ledger_proto_rawDesc = "" +
 	"\tpage_size\x18\x02 \x01(\rR\bpageSize\"i\n" +
 	"\x12ListBlocksResponse\x120\n" +
 	"\x06blocks\x18\x01 \x03(\v2\x18.rgb.ledger.v1.BlockInfoR\x06blocks\x12!\n" +
-	"\ftotal_blocks\x18\x02 \x01(\x04R\vtotalBlocks2\xa4\x05\n" +
+	"\ftotal_blocks\x18\x02 \x01(\x04R\vtotalBlocks\"E\n" +
+	"\x15GetLeaderboardRequest\x12\x13\n" +
+	"\x05top_n\x18\x01 \x01(\rR\x04topN\x12\x17\n" +
+	"\asort_by\x18\x02 \x01(\tR\x06sortBy\"\x95\x01\n" +
+	"\x10LeaderboardEntry\x12\x12\n" +
+	"\x04rank\x18\x01 \x01(\rR\x04rank\x12\x1b\n" +
+	"\tplayer_id\x18\x02 \x01(\tR\bplayerId\x12\x10\n" +
+	"\x03red\x18\x03 \x01(\rR\x03red\x12\x14\n" +
+	"\x05green\x18\x04 \x01(\rR\x05green\x12\x12\n" +
+	"\x04blue\x18\x05 \x01(\rR\x04blue\x12\x14\n" +
+	"\x05total\x18\x06 \x01(\rR\x05total\"P\n" +
+	"\x13LeaderboardResponse\x129\n" +
+	"\aentries\x18\x01 \x03(\v2\x1f.rgb.ledger.v1.LeaderboardEntryR\aentries2\x82\x06\n" +
 	"\rLedgerService\x12P\n" +
 	"\n" +
 	"GetBalance\x12 .rgb.ledger.v1.GetBalanceRequest\x1a\x1e.rgb.ledger.v1.BalanceResponse\"\x00\x12h\n" +
@@ -1285,7 +1477,8 @@ const file_api_proto_v1_ledger_proto_rawDesc = "" +
 	"\rGetChainStats\x12#.rgb.ledger.v1.GetChainStatsRequest\x1a!.rgb.ledger.v1.ChainStatsResponse\"\x00\x12J\n" +
 	"\bGetBlock\x12\x1e.rgb.ledger.v1.GetBlockRequest\x1a\x1c.rgb.ledger.v1.BlockResponse\"\x00\x12S\n" +
 	"\n" +
-	"ListBlocks\x12 .rgb.ledger.v1.ListBlocksRequest\x1a!.rgb.ledger.v1.ListBlocksResponse\"\x00B\n" +
+	"ListBlocks\x12 .rgb.ledger.v1.ListBlocksRequest\x1a!.rgb.ledger.v1.ListBlocksResponse\"\x00\x12\\\n" +
+	"\x0eGetLeaderboard\x12$.rgb.ledger.v1.GetLeaderboardRequest\x1a\".rgb.ledger.v1.LeaderboardResponse\"\x00B\n" +
 	"Z\b./pkg/pbb\x06proto3"
 
 var (
@@ -1301,7 +1494,7 @@ func file_api_proto_v1_ledger_proto_rawDescGZIP() []byte {
 }
 
 var file_api_proto_v1_ledger_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_api_proto_v1_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_api_proto_v1_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_api_proto_v1_ledger_proto_goTypes = []any{
 	(TransactionPayload_TxType)(0),       // 0: rgb.ledger.v1.TransactionPayload.TxType
 	(*GetBalanceRequest)(nil),            // 1: rgb.ledger.v1.GetBalanceRequest
@@ -1321,6 +1514,9 @@ var file_api_proto_v1_ledger_proto_goTypes = []any{
 	(*BlockResponse)(nil),                // 15: rgb.ledger.v1.BlockResponse
 	(*ListBlocksRequest)(nil),            // 16: rgb.ledger.v1.ListBlocksRequest
 	(*ListBlocksResponse)(nil),           // 17: rgb.ledger.v1.ListBlocksResponse
+	(*GetLeaderboardRequest)(nil),        // 18: rgb.ledger.v1.GetLeaderboardRequest
+	(*LeaderboardEntry)(nil),             // 19: rgb.ledger.v1.LeaderboardEntry
+	(*LeaderboardResponse)(nil),          // 20: rgb.ledger.v1.LeaderboardResponse
 }
 var file_api_proto_v1_ledger_proto_depIdxs = []int32{
 	0,  // 0: rgb.ledger.v1.TransactionPayload.type:type_name -> rgb.ledger.v1.TransactionPayload.TxType
@@ -1328,25 +1524,28 @@ var file_api_proto_v1_ledger_proto_depIdxs = []int32{
 	9,  // 2: rgb.ledger.v1.TransactionHistoryResponse.transactions:type_name -> rgb.ledger.v1.TransactionEntry
 	14, // 3: rgb.ledger.v1.BlockResponse.block:type_name -> rgb.ledger.v1.BlockInfo
 	14, // 4: rgb.ledger.v1.ListBlocksResponse.blocks:type_name -> rgb.ledger.v1.BlockInfo
-	1,  // 5: rgb.ledger.v1.LedgerService.GetBalance:input_type -> rgb.ledger.v1.GetBalanceRequest
-	3,  // 6: rgb.ledger.v1.LedgerService.SubmitTransaction:input_type -> rgb.ledger.v1.SubmitTransactionRequest
-	6,  // 7: rgb.ledger.v1.LedgerService.RegisterAuthority:input_type -> rgb.ledger.v1.RegisterAuthorityRequest
-	8,  // 8: rgb.ledger.v1.LedgerService.GetTransactionHistory:input_type -> rgb.ledger.v1.GetTransactionHistoryRequest
-	11, // 9: rgb.ledger.v1.LedgerService.GetChainStats:input_type -> rgb.ledger.v1.GetChainStatsRequest
-	13, // 10: rgb.ledger.v1.LedgerService.GetBlock:input_type -> rgb.ledger.v1.GetBlockRequest
-	16, // 11: rgb.ledger.v1.LedgerService.ListBlocks:input_type -> rgb.ledger.v1.ListBlocksRequest
-	2,  // 12: rgb.ledger.v1.LedgerService.GetBalance:output_type -> rgb.ledger.v1.BalanceResponse
-	5,  // 13: rgb.ledger.v1.LedgerService.SubmitTransaction:output_type -> rgb.ledger.v1.SubmitTransactionResponse
-	7,  // 14: rgb.ledger.v1.LedgerService.RegisterAuthority:output_type -> rgb.ledger.v1.RegisterAuthorityResponse
-	10, // 15: rgb.ledger.v1.LedgerService.GetTransactionHistory:output_type -> rgb.ledger.v1.TransactionHistoryResponse
-	12, // 16: rgb.ledger.v1.LedgerService.GetChainStats:output_type -> rgb.ledger.v1.ChainStatsResponse
-	15, // 17: rgb.ledger.v1.LedgerService.GetBlock:output_type -> rgb.ledger.v1.BlockResponse
-	17, // 18: rgb.ledger.v1.LedgerService.ListBlocks:output_type -> rgb.ledger.v1.ListBlocksResponse
-	12, // [12:19] is the sub-list for method output_type
-	5,  // [5:12] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	19, // 5: rgb.ledger.v1.LeaderboardResponse.entries:type_name -> rgb.ledger.v1.LeaderboardEntry
+	1,  // 6: rgb.ledger.v1.LedgerService.GetBalance:input_type -> rgb.ledger.v1.GetBalanceRequest
+	3,  // 7: rgb.ledger.v1.LedgerService.SubmitTransaction:input_type -> rgb.ledger.v1.SubmitTransactionRequest
+	6,  // 8: rgb.ledger.v1.LedgerService.RegisterAuthority:input_type -> rgb.ledger.v1.RegisterAuthorityRequest
+	8,  // 9: rgb.ledger.v1.LedgerService.GetTransactionHistory:input_type -> rgb.ledger.v1.GetTransactionHistoryRequest
+	11, // 10: rgb.ledger.v1.LedgerService.GetChainStats:input_type -> rgb.ledger.v1.GetChainStatsRequest
+	13, // 11: rgb.ledger.v1.LedgerService.GetBlock:input_type -> rgb.ledger.v1.GetBlockRequest
+	16, // 12: rgb.ledger.v1.LedgerService.ListBlocks:input_type -> rgb.ledger.v1.ListBlocksRequest
+	18, // 13: rgb.ledger.v1.LedgerService.GetLeaderboard:input_type -> rgb.ledger.v1.GetLeaderboardRequest
+	2,  // 14: rgb.ledger.v1.LedgerService.GetBalance:output_type -> rgb.ledger.v1.BalanceResponse
+	5,  // 15: rgb.ledger.v1.LedgerService.SubmitTransaction:output_type -> rgb.ledger.v1.SubmitTransactionResponse
+	7,  // 16: rgb.ledger.v1.LedgerService.RegisterAuthority:output_type -> rgb.ledger.v1.RegisterAuthorityResponse
+	10, // 17: rgb.ledger.v1.LedgerService.GetTransactionHistory:output_type -> rgb.ledger.v1.TransactionHistoryResponse
+	12, // 18: rgb.ledger.v1.LedgerService.GetChainStats:output_type -> rgb.ledger.v1.ChainStatsResponse
+	15, // 19: rgb.ledger.v1.LedgerService.GetBlock:output_type -> rgb.ledger.v1.BlockResponse
+	17, // 20: rgb.ledger.v1.LedgerService.ListBlocks:output_type -> rgb.ledger.v1.ListBlocksResponse
+	20, // 21: rgb.ledger.v1.LedgerService.GetLeaderboard:output_type -> rgb.ledger.v1.LeaderboardResponse
+	14, // [14:22] is the sub-list for method output_type
+	6,  // [6:14] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_v1_ledger_proto_init() }
@@ -1360,7 +1559,7 @@ func file_api_proto_v1_ledger_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_v1_ledger_proto_rawDesc), len(file_api_proto_v1_ledger_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   17,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -26,6 +26,7 @@ const (
 	LedgerService_GetChainStats_FullMethodName         = "/rgb.ledger.v1.LedgerService/GetChainStats"
 	LedgerService_GetBlock_FullMethodName              = "/rgb.ledger.v1.LedgerService/GetBlock"
 	LedgerService_ListBlocks_FullMethodName            = "/rgb.ledger.v1.LedgerService/ListBlocks"
+	LedgerService_GetLeaderboard_FullMethodName        = "/rgb.ledger.v1.LedgerService/GetLeaderboard"
 )
 
 // LedgerServiceClient is the client API for LedgerService service.
@@ -45,6 +46,8 @@ type LedgerServiceClient interface {
 	GetBlock(ctx context.Context, in *GetBlockRequest, opts ...grpc.CallOption) (*BlockResponse, error)
 	// ListBlocks returns a paginated list of block headers.
 	ListBlocks(ctx context.Context, in *ListBlocksRequest, opts ...grpc.CallOption) (*ListBlocksResponse, error)
+	// GetLeaderboard returns the top-N players sorted by the requested channel.
+	GetLeaderboard(ctx context.Context, in *GetLeaderboardRequest, opts ...grpc.CallOption) (*LeaderboardResponse, error)
 }
 
 type ledgerServiceClient struct {
@@ -125,6 +128,16 @@ func (c *ledgerServiceClient) ListBlocks(ctx context.Context, in *ListBlocksRequ
 	return out, nil
 }
 
+func (c *ledgerServiceClient) GetLeaderboard(ctx context.Context, in *GetLeaderboardRequest, opts ...grpc.CallOption) (*LeaderboardResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LeaderboardResponse)
+	err := c.cc.Invoke(ctx, LedgerService_GetLeaderboard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LedgerServiceServer is the server API for LedgerService service.
 // All implementations must embed UnimplementedLedgerServiceServer
 // for forward compatibility.
@@ -142,6 +155,8 @@ type LedgerServiceServer interface {
 	GetBlock(context.Context, *GetBlockRequest) (*BlockResponse, error)
 	// ListBlocks returns a paginated list of block headers.
 	ListBlocks(context.Context, *ListBlocksRequest) (*ListBlocksResponse, error)
+	// GetLeaderboard returns the top-N players sorted by the requested channel.
+	GetLeaderboard(context.Context, *GetLeaderboardRequest) (*LeaderboardResponse, error)
 	mustEmbedUnimplementedLedgerServiceServer()
 }
 
@@ -172,6 +187,9 @@ func (UnimplementedLedgerServiceServer) GetBlock(context.Context, *GetBlockReque
 }
 func (UnimplementedLedgerServiceServer) ListBlocks(context.Context, *ListBlocksRequest) (*ListBlocksResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListBlocks not implemented")
+}
+func (UnimplementedLedgerServiceServer) GetLeaderboard(context.Context, *GetLeaderboardRequest) (*LeaderboardResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLeaderboard not implemented")
 }
 func (UnimplementedLedgerServiceServer) mustEmbedUnimplementedLedgerServiceServer() {}
 func (UnimplementedLedgerServiceServer) testEmbeddedByValue()                       {}
@@ -320,6 +338,24 @@ func _LedgerService_ListBlocks_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LedgerService_GetLeaderboard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLeaderboardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LedgerServiceServer).GetLeaderboard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LedgerService_GetLeaderboard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LedgerServiceServer).GetLeaderboard(ctx, req.(*GetLeaderboardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LedgerService_ServiceDesc is the grpc.ServiceDesc for LedgerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -354,6 +390,10 @@ var LedgerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListBlocks",
 			Handler:    _LedgerService_ListBlocks_Handler,
+		},
+		{
+			MethodName: "GetLeaderboard",
+			Handler:    _LedgerService_GetLeaderboard_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -354,3 +354,26 @@ func (s *LedgerService) ListBlocks(ctx context.Context, page, pageSize uint32) (
 	}
 	return in.ListBlocksResult{Blocks: entries, TotalBlocks: total}, nil
 }
+
+// GetLeaderboard returns the top-N players sorted by the requested channel.
+func (s *LedgerService) GetLeaderboard(ctx context.Context, req in.LeaderboardRequest) ([]*in.LeaderboardEntry, error) {
+	logger.Infof("GetLeaderboard top=%d sortBy=%s", req.TopN, req.SortBy)
+
+	entries, err := s.playerRepo.GetLeaderboard(ctx, req.TopN, req.SortBy)
+	if err != nil {
+		return nil, fmt.Errorf("query leaderboard: %w", err)
+	}
+
+	result := make([]*in.LeaderboardEntry, len(entries))
+	for i, e := range entries {
+		result[i] = &in.LeaderboardEntry{
+			Rank:     e.Rank,
+			PlayerID: e.PlayerID,
+			Red:      e.Red,
+			Green:    e.Green,
+			Blue:     e.Blue,
+			Total:    e.Total,
+		}
+	}
+	return result, nil
+}

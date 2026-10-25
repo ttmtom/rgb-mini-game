@@ -84,9 +84,10 @@ func main() {
 		fmt.Println("  3. Complete Mission")
 		fmt.Println("  4. Transfer")
 		fmt.Println("  5. Transaction History")
-		fmt.Println("  6. Chain Stats")
-		fmt.Println("  7. Block Explorer")
-		fmt.Println("  8. Quit")
+		fmt.Println("  6. Leaderboard")
+		fmt.Println("  7. Chain Stats")
+		fmt.Println("  8. Block Explorer")
+		fmt.Println("  9. Quit")
 		fmt.Print("Select option: ")
 
 		if !scanner.Scan() {
@@ -120,17 +121,20 @@ func main() {
 			doTxHistory(ledgerClient, playerID, scanner)
 
 		case "6":
-			doChainStats(ledgerClient)
+			doLeaderboard(ledgerClient, scanner)
 
 		case "7":
-			doBlockExplorer(ledgerClient, scanner)
+			doChainStats(ledgerClient)
 
 		case "8":
+			doBlockExplorer(ledgerClient, scanner)
+
+		case "9":
 			fmt.Println("Goodbye!")
 			return
 
 		default:
-			fmt.Println("Unknown option. Please enter 1–8.")
+			fmt.Println("Unknown option. Please enter 1–9.")
 		}
 	}
 }
@@ -344,6 +348,36 @@ func doTxHistory(client pb.LedgerServiceClient, playerID string, scanner *bufio.
 			t.GetRed(), t.GetGreen(), t.GetBlue(),
 			t.GetSenderId()[:12]+"...", t.GetReceiverId()[:12]+"...",
 			blockStr)
+	}
+}
+
+// doLeaderboard fetches and prints the leaderboard.
+func doLeaderboard(client pb.LedgerServiceClient, scanner *bufio.Scanner) {
+	fmt.Print("Sort by [TOTAL/RED/GREEN/BLUE] (default TOTAL): ")
+	sortBy := "TOTAL"
+	if scanner.Scan() {
+		if s := strings.ToUpper(strings.TrimSpace(scanner.Text())); s != "" {
+			sortBy = s
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := client.GetLeaderboard(ctx, &pb.GetLeaderboardRequest{TopN: 10, SortBy: sortBy})
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Leaderboard (sorted by %s)\n", sortBy)
+	fmt.Println(strings.Repeat("-", 70))
+	fmt.Printf("%-4s %-66s %5s %5s %5s %6s\n", "Rank", "Player ID", "RED", "GRN", "BLU", "TOTAL")
+	fmt.Println(strings.Repeat("-", 70))
+	for _, e := range resp.GetEntries() {
+		fmt.Printf("#%-3d %-66s %5d %5d %5d %6d\n",
+			e.GetRank(), e.GetPlayerId(),
+			e.GetRed(), e.GetGreen(), e.GetBlue(), e.GetTotal())
 	}
 }
 

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"rgb-game/internal/app/port/out"
 	"rgb-game/internal/domain/types"
 
 	"gorm.io/gorm"
@@ -88,4 +89,53 @@ func (r *PlayerRepository) Count(ctx context.Context) (uint64, error) {
 		return 0, err
 	}
 	return uint64(count), nil
+}
+
+// GetLeaderboard returns the top-n players sorted by the requested channel.
+// sortBy must be one of "RED", "GREEN", "BLUE", "TOTAL" (case-insensitive).
+func (r *PlayerRepository) GetLeaderboard(ctx context.Context, topN uint32, sortBy string) ([]*out.LeaderboardEntry, error) {
+	db := dbFromContext(ctx, r.db)
+	if topN == 0 || topN > 100 {
+		topN = 10
+	}
+
+	type row struct {
+		ID    string
+		Red   uint32
+		Green uint32
+		Blue  uint32
+		Total uint64
+	}
+
+	var rows []row
+	query := db.Model(&playerModel{}).
+		Select("id, red, green, blue, (red + green + blue) AS total")
+
+	switch sortBy {
+	case "RED":
+		query = query.Order("red DESC")
+	case "GREEN":
+		query = query.Order("green DESC")
+	case "BLUE":
+		query = query.Order("blue DESC")
+	default:
+		query = query.Order("total DESC")
+	}
+
+	if err := query.Limit(int(topN)).Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	entries := make([]*out.LeaderboardEntry, len(rows))
+	for i, row := range rows {
+		entries[i] = &out.LeaderboardEntry{
+			Rank:     uint32(i + 1),
+			PlayerID: row.ID,
+			Red:      row.Red,
+			Green:    row.Green,
+			Blue:     row.Blue,
+			Total:    uint32(row.Total),
+		}
+	}
+	return entries, nil
 }

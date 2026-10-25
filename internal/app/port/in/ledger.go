@@ -107,6 +107,22 @@ type BlockInfoEntry struct {
 	TxHashes []string
 }
 
+// LeaderboardRequest carries params for the leaderboard query.
+type LeaderboardRequest struct {
+	TopN   uint32 // 0 → default 10, max 100
+	SortBy string // "RED", "GREEN", "BLUE", "TOTAL"
+}
+
+// LeaderboardEntry is a ranked player summary.
+type LeaderboardEntry struct {
+	Rank     uint32
+	PlayerID string
+	Red      uint32
+	Green    uint32
+	Blue     uint32
+	Total    uint32
+}
+
 // LedgerUseCase defines the application operations exposed by the Ledger service.
 type LedgerUseCase interface {
 	// GetBalance returns the player record (R/G/B + nonce), or nil if not found.
@@ -134,4 +150,7 @@ type LedgerUseCase interface {
 
 	// ListBlocks returns a paginated list of blocks ordered by ascending height.
 	ListBlocks(ctx context.Context, page, pageSize uint32) (ListBlocksResult, error)
+
+	// GetLeaderboard returns the top-N players ordered by the requested channel.
+	GetLeaderboard(ctx context.Context, req LeaderboardRequest) ([]*LeaderboardEntry, error)
 }

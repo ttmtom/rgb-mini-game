@@ -247,3 +247,26 @@ func blockToProto(b *types.Block, txHashes []string) *pb.BlockInfo {
 		TxHashes:   txHashes,
 	}
 }
+
+// GetLeaderboard implements pb.LedgerServiceServer.
+func (h *Handler) GetLeaderboard(ctx context.Context, req *pb.GetLeaderboardRequest) (*pb.LeaderboardResponse, error) {
+	entries, err := h.ledger.GetLeaderboard(ctx, in.LeaderboardRequest{
+		TopN:   req.GetTopN(),
+		SortBy: req.GetSortBy(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	pbEntries := make([]*pb.LeaderboardEntry, len(entries))
+	for i, e := range entries {
+		pbEntries[i] = &pb.LeaderboardEntry{
+			Rank:     e.Rank,
+			PlayerId: e.PlayerID,
+			Red:      e.Red,
+			Green:    e.Green,
+			Blue:     e.Blue,
+			Total:    e.Total,
+		}
+	}
+	return &pb.LeaderboardResponse{Entries: pbEntries}, nil
+}

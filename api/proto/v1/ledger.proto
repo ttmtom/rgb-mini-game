@@ -24,6 +24,9 @@ service LedgerService {
 
   // ListBlocks returns a paginated list of block headers.
   rpc ListBlocks (ListBlocksRequest) returns (ListBlocksResponse) {}
+
+  // GetLeaderboard returns the top-N players sorted by the requested channel.
+  rpc GetLeaderboard (GetLeaderboardRequest) returns (LeaderboardResponse) {}
 }
 
 // =============================================================================
@@ -177,4 +180,26 @@ message ListBlocksRequest {
 message ListBlocksResponse {
   repeated BlockInfo blocks = 1;
   uint64 total_blocks = 2;
+}
+
+// =============================================================================
+// Leaderboard
+// =============================================================================
+
+message GetLeaderboardRequest {
+  uint32 top_n = 1;    // max 100; 0 defaults to 10
+  string sort_by = 2;  // "RED", "GREEN", "BLUE", "TOTAL" (default: "TOTAL")
+}
+
+message LeaderboardEntry {
+  uint32 rank = 1;
+  string player_id = 2;
+  uint32 red = 3;
+  uint32 green = 4;
+  uint32 blue = 5;
+  uint32 total = 6;
+}
+
+message LeaderboardResponse {
+  repeated LeaderboardEntry entries = 1;
 }
