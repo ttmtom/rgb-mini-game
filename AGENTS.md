@@ -13,14 +13,14 @@ The codebase follows **Hexagonal Architecture** (Ports & Adapters):
         │                   chain,merkle,mission}     │
         └──────────────────────┬──────────────────────┘
                                │ used by
-        ┌──────────────────────▼──────────────────────┐
+        ┌──────────────────────▼───────────────────────┐
         │               Application Ring              │
         │         internal/app/{port,service}         │
         │  port/in  ← use-case interfaces             │
         │  port/out → infrastructure ports            │
-        └────────────┬───────────────────┬────────────┘
+        └────────────┬──────────────────────────┬────────────┘
                      │                   │
-       ┌─────────────▼───┐         ┌──────▼─────────────┐
+       ┌─────────────▼───┐         ┌─────▼──────────────┐
        │ Driving Adapters│         │  Driven Adapters   │
        │ (Left / Primary)│         │ (Right / Secondary)│
        │ adapter/driving │         │ adapter/driven     │
